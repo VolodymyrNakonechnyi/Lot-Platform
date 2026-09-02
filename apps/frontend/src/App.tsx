@@ -1,11 +1,20 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import heroImg from './assets/hero.png'
 import reactLogo from './assets/react.svg'
 import viteLogo from './assets/vite.svg'
+import { helloSchema } from '@app/contracts'
 import './App.css'
 
 function App() {
   const [count, setCount] = useState(0)
+  const [hello, setHello] = useState('loading…')
+
+  useEffect(() => {
+    fetch('http://localhost:3000')
+      .then((res) => res.json())
+      .then((data) => setHello(helloSchema.parse(data).message))
+      .catch((err) => setHello(String(err)))
+  }, [])
 
   return (
     <>
@@ -20,6 +29,7 @@ function App() {
           <p>
             Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
           </p>
+          <p>{hello}</p>
         </div>
         <button
           type="button"

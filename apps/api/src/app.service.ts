@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
+import { helloSchema, type Hello } from '@app/contracts';
 
 @Injectable()
 export class AppService {
-  getHello(): string {
-    return 'Test';
+  getHello(): Hello {
+    return helloSchema.parse({ message: 'Hello from API' });
   }
 }
