@@ -4,11 +4,44 @@ import { Pool } from 'pg';
 import { users, type NewUser } from './schema';
 
 const seedUsers: NewUser[] = [
-  { email: 'vova@example.com', name: 'Vova' },
-  { email: 'olena@example.com', name: 'Olena' },
-  { email: 'taras@example.com', name: 'Taras' },
-  { email: 'marta@example.com', name: 'Marta' },
-  { email: 'ihor@example.com', name: 'Ihor' },
+  {
+    username: 'vova',
+    email: 'vova@example.com',
+    name: 'Vova',
+    password: 'seed-password-hash',
+    phoneNumber: '380671234501',
+    role: 'admin',
+    confirmedEmail: true,
+  },
+  {
+    username: 'olena',
+    email: 'olena@example.com',
+    name: 'Olena',
+    password: 'seed-password-hash',
+    phoneNumber: '380671234502',
+    role: 'moderator',
+  },
+  {
+    username: 'taras',
+    email: 'taras@example.com',
+    name: 'Taras',
+    password: 'seed-password-hash',
+    phoneNumber: '380671234503',
+  },
+  {
+    username: 'marta',
+    email: 'marta@example.com',
+    name: 'Marta',
+    password: 'seed-password-hash',
+    phoneNumber: '380671234504',
+  },
+  {
+    username: 'ihor',
+    email: 'ihor@example.com',
+    name: 'Ihor',
+    password: 'seed-password-hash',
+    phoneNumber: '380671234505',
+  },
 ];
 
 async function seed(): Promise<void> {
