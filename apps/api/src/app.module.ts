@@ -4,6 +4,9 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DbModule } from './db/db.module';
 import { UserModule } from './user/user.module';
+import { APP_INTERCEPTOR, APP_PIPE, APP_FILTER } from '@nestjs/core';
+import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
+import { HttpExceptionFilter } from './common/http-exception.filter';
 
 @Module({
   imports: [
@@ -22,9 +25,26 @@ import { UserModule } from './user/user.module';
       },
       prefix: '{alt}',
     }),
-    BullModule.registerQueue({ configKey: 'alternative-config', name: 'video' }),
+    BullModule.registerQueue({
+      configKey: 'alternative-config',
+      name: 'video',
+    }),
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_PIPE,
+      useClass: ZodValidationPipe,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ZodSerializerInterceptor,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: HttpExceptionFilter,
+    },
+  ],
 })
 export class AppModule {}
