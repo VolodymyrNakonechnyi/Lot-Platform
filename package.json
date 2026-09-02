@@ -7,6 +7,9 @@
     "dev:api": "pnpm --filter ./apps/api start:dev",
     "dev:front": "pnpm --filter ./apps/frontend dev",
     "build": "pnpm -r build",
-    "typecheck": "pnpm -r --parallel typecheck"
+    "typecheck": "pnpm -r --parallel typecheck",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:psql": "docker compose exec postgres psql -U user -d bullmq"
   }
 }

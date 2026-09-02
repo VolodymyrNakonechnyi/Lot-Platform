@@ -1,10 +1,14 @@
+import { existsSync } from 'node:fs';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
+  if (existsSync('.env')) process.loadEnvFile('.env');
+
   const app = await NestFactory.create(AppModule);
+  app.enableShutdownHooks();
   app.enableCors();
 
   app.useGlobalPipes(
