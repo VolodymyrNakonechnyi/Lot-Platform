@@ -1,0 +1,12 @@
+{
+  "name": "bullmq-monorepo",
+  "private": true,
+  "scripts": {
+    "build:shared": "pnpm --filter ./packages/shared build",
+    "dev:shared": "pnpm --filter ./packages/shared dev",
+    "dev:api": "pnpm --filter ./apps/api start:dev",
+    "dev:front": "pnpm --filter ./apps/frontend dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r --parallel typecheck"
+  }
+}
