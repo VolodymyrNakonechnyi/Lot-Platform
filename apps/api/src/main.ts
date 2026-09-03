@@ -19,7 +19,7 @@ async function bootstrap() {
       .build(),
   );
 
-  SwaggerModule.setup('api', app, cleanupOpenApiDoc(openApiDoc));
+  SwaggerModule.setup('docs', app, cleanupOpenApiDoc(openApiDoc));
   app.enableShutdownHooks();
   app.enableCors();
 
@@ -30,14 +30,6 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
     }),
   );
-
-  const config = new DocumentBuilder()
-    .setTitle('BullMQ API')
-    .setVersion('1.0')
-    .build();
-  SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, config), {
-    jsonDocumentUrl: 'docs/json',
-  });
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);

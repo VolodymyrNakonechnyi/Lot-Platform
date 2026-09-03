@@ -1,13 +1,14 @@
 import { sql } from 'drizzle-orm';
-import { pgEnum } from 'drizzle-orm/pg-core';
+import { AnyPgColumn } from 'drizzle-orm/pg-core';
+import { smallint } from 'drizzle-orm/pg-core';
 import { boolean } from 'drizzle-orm/pg-core';
 import { check } from 'drizzle-orm/pg-core';
 import {
   pgTable,
-  serial,
   text,
   timestamp,
   uniqueIndex,
+  uuid,
 } from 'drizzle-orm/pg-core';
 
 const ROLES = ['user', 'moderator', 'admin'] as const;
@@ -16,7 +17,7 @@ export type Role = (typeof ROLES)[number];
 export const users = pgTable(
   'users',
   {
-    id: serial('id').primaryKey(),
+    id: uuid('id').primaryKey().defaultRandom(),
     username: text('username').notNull().unique(),
     avatarUrl: text('avatar_url'),
     role: text('role', { enum: ROLES }).notNull().default('user'),
@@ -28,12 +29,17 @@ export const users = pgTable(
     confirmedPhoneNumber: boolean('confirmed_phone_number')
       .notNull()
       .default(false),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
+    lastLogin: timestamp('last_login', { withTimezone: true }),
   },
   (table) => [
-    uniqueIndex('users_email_idx').on(table.email),
+    uniqueIndex('users_email_idx').on(sql`lower(${table.email})`),
     check('phone_format', sql`${table.phoneNumber} ~ '^[1-9][0-9]{6,14}$'`),
     check(
       'role_valid',
@@ -47,3 +53,13 @@ export const users = pgTable(
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+
+export const categories = pgTable('categories', {
+  id: smallint('id').generatedAlwaysAsIdentity().primaryKey(),
+  name: text().notNull(),
+  slug: text().notNull().unique(),
+  parentId: smallint('parent_id').references((): AnyPgColumn => categories.id),
+});
+
+export type Category = typeof categories.$inferSelect;
+export type NewCategory = typeof categories.$inferInsert;
