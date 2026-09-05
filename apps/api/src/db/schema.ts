@@ -1,7 +1,9 @@
+import { table } from 'console';
 import { sql } from 'drizzle-orm';
 import { AnyPgColumn } from 'drizzle-orm/pg-core';
 import { index } from 'drizzle-orm/pg-core';
 import { jsonb } from 'drizzle-orm/pg-core';
+import { integer } from 'drizzle-orm/pg-core';
 import { primaryKey } from 'drizzle-orm/pg-core';
 import { decimal } from 'drizzle-orm/pg-core';
 import { smallint } from 'drizzle-orm/pg-core';
@@ -129,6 +131,10 @@ export const lots = pgTable(
     status: text('status', { enum: LOT_STATUSES }).notNull().default('draft'),
     startPrice: decimal('start_price', { precision: 12, scale: 2 }).notNull(),
     soldPrice: decimal('sold_price', { precision: 12, scale: 2 }),
+    currentPrice: decimal('current_price', { precision: 12, scale: 2 }),
+    minBidStep: decimal('min_bid_step', { precision: 12, scale: 2 })
+      .notNull()
+      .default('1.00'),
     description: text(),
     startDate: timestamp('start_date').notNull(),
     endDate: timestamp('end_date').notNull(),
@@ -161,10 +167,10 @@ export type NewLot = typeof lots.$inferInsert;
 export const lostAttributes = pgTable(
   'lots_attributes',
   {
-    lotId: serial('lot_id')
+    lotId: integer('lot_id')
       .references(() => lots.id)
       .notNull(),
-    categoryAttributeId: serial('category_attribute_id')
+    categoryAttributeId: integer('category_attribute_id')
       .references(() => categoryAttributes.id)
       .notNull(),
     value: text('value').notNull(),
@@ -179,3 +185,29 @@ export const lostAttributes = pgTable(
     ),
   ],
 );
+
+export const bids = pgTable(
+  'bids',
+  {
+    id: serial('id').primaryKey(),
+    userId: uuid('user_id')
+      .references(() => users.id)
+      .notNull(),
+    lotId: integer('lot_id')
+      .references(() => lots.id, { onDelete: 'cascade' })
+      .notNull(),
+    amount: decimal('amount', { precision: 12, scale: 2 }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check('bid_amount_positive', sql`${table.amount} > 0`),
+    uniqueIndex('bids_lot_amount_idx').on(table.lotId, table.amount),
+    index('bids_lot_top_idx').on(table.lotId, sql`${table.amount} DESC`),
+    index('bids_user_idx').on(table.userId, sql`${table.createdAt} DESC`),
+  ],
+);
+
+export type Bid = typeof bids.$inferSelect;
+export type NewBit = typeof bids.$inferInsert;
