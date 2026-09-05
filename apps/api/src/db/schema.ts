@@ -136,6 +136,8 @@ export const lots = pgTable(
       .default('1.00'),
     description: text(),
     returnPolicy: text('return_policy'),
+    watchersCount: integer('watchers_count').notNull().default(0),
+    viewsCount: integer('views_count').notNull().default(0),
     startDate: timestamp('start_date').notNull(),
     endDate: timestamp('end_date').notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true })
@@ -155,6 +157,8 @@ export const lots = pgTable(
       )})`,
     ),
     check('end_date_valid', sql`${table.startDate} < ${table.endDate}`),
+    check('watchers_count_valid', sql`${table.watchersCount} >= 0`),
+    check('views_count_valid', sql`${table.viewsCount} >= 0`),
     index('lots_published_category_idx')
       .on(table.categoryId)
       .where(sql`${table.status} = 'published'`),
@@ -258,3 +262,53 @@ export const lotDeliveryOptions = pgTable(
 
 export type LotDeliveryOption = typeof lotDeliveryOptions.$inferSelect;
 export type NewLotDeliveryOption = typeof lotDeliveryOptions.$inferInsert;
+
+export const lotWatchers = pgTable(
+  'lot_watchers',
+  {
+    lotId: integer('lot_id')
+      .references(() => lots.id, { onDelete: 'cascade' })
+      .notNull(),
+    userId: uuid('user_id')
+      .references(() => users.id, { onDelete: 'cascade' })
+      .notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.lotId, table.userId] }),
+    index('lot_watchers_user_idx').on(
+      table.userId,
+      sql`${table.createdAt} DESC`,
+    ),
+  ],
+);
+
+export type LotWatcher = typeof lotWatchers.$inferSelect;
+export type NewLotWatcher = typeof lotWatchers.$inferInsert;
+
+export const lotViews = pgTable(
+  'lot_views',
+  {
+    lotId: integer('lot_id')
+      .references(() => lots.id, { onDelete: 'cascade' })
+      .notNull(),
+    visitorId: uuid('visitor_id').notNull(),
+    userId: uuid('user_id').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+    viewedAt: timestamp('viewed_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.lotId, table.visitorId] }),
+    uniqueIndex('lot_views_user_idx')
+      .on(table.lotId, table.userId)
+      .where(sql`${table.userId} IS NOT NULL`),
+  ],
+);
+
+export type LotView = typeof lotViews.$inferSelect;
+export type NewLotView = typeof lotViews.$inferInsert;
