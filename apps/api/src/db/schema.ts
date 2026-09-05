@@ -52,7 +52,7 @@ export const users = pgTable(
     check(
       'role_valid',
       sql`${table.role} IN (${sql.join(
-        ROLES.map((r) => sql`${r}`),
+        ROLES.map((r) => sql.raw(`'${r}'`)),
         sql`, `,
       )})`,
     ),
@@ -152,7 +152,7 @@ export const lots = pgTable(
     check(
       'role_valid',
       sql`${table.status} IN (${sql.join(
-        LOT_STATUSES.map((r) => sql`${r}`),
+        LOT_STATUSES.map((r) => sql.raw(`'${r}'`)),
         sql`, `,
       )})`,
     ),
@@ -252,7 +252,7 @@ export const lotDeliveryOptions = pgTable(
     check(
       'delivery_payment_valid',
       sql`${table.payment} IN (${sql.join(
-        DELIVERY_PAYMENTS.map((p) => sql`${p}`),
+        DELIVERY_PAYMENTS.map((p) => sql.raw(`'${p}'`)),
         sql`, `,
       )})`,
     ),
