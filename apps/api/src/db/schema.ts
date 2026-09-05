@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import { AnyPgColumn } from 'drizzle-orm/pg-core';
 import { index } from 'drizzle-orm/pg-core';
 import { jsonb } from 'drizzle-orm/pg-core';
+import { primaryKey } from 'drizzle-orm/pg-core';
 import { decimal } from 'drizzle-orm/pg-core';
 import { smallint } from 'drizzle-orm/pg-core';
 import { boolean } from 'drizzle-orm/pg-core';
@@ -156,3 +157,25 @@ export const lots = pgTable(
 
 export type Lot = typeof lots.$inferSelect;
 export type NewLot = typeof lots.$inferInsert;
+
+export const lostAttributes = pgTable(
+  'lots_attributes',
+  {
+    lotId: serial('lot_id')
+      .references(() => lots.id)
+      .notNull(),
+    categoryAttributeId: serial('category_attribute_id')
+      .references(() => categoryAttributes.id)
+      .notNull(),
+    value: text('value').notNull(),
+    valueNumber: decimal('value_number', { precision: 12, scale: 2 }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.lotId, table.categoryAttributeId] }),
+    index('lav_attr_value_idx').on(table.categoryAttributeId, table.value),
+    index('lav_attr_number_idx').on(
+      table.categoryAttributeId,
+      table.valueNumber,
+    ),
+  ],
+);
