@@ -17,9 +17,18 @@ import {
   serial,
 } from 'drizzle-orm/pg-core';
 import { inList } from './utils';
-
-const ROLES = ['user', 'moderator', 'admin'] as const;
-export type Role = (typeof ROLES)[number];
+import {
+  ACTIVE_PAYMENT_STATUSES,
+  ATTRIBUTE_TYPES,
+  DELIVERY_PAYMENTS,
+  LOT_STATUS,
+  LOT_STATUSES,
+  PAYMENT_PROVIDERS,
+  PAYMENT_STATUS,
+  PAYMENT_STATUSES,
+  ROLE,
+  ROLES,
+} from '../common/consts';
 
 export const users = pgTable(
   'users',
@@ -29,7 +38,7 @@ export const users = pgTable(
       .default(sql`uuidv7()`),
     username: text('username').notNull().unique(),
     avatarUrl: text('avatar_url'),
-    role: text('role', { enum: ROLES }).notNull().default('user'),
+    role: text('role', { enum: ROLES }).notNull().default(ROLE.USER),
     password: text().notNull(),
     email: text('email').notNull(),
     confirmedEmail: boolean('confirmed_email').notNull().default(false),
@@ -75,14 +84,6 @@ export const categories = pgTable(
 export type Category = typeof categories.$inferSelect;
 export type NewCategory = typeof categories.$inferInsert;
 
-const ATTRIBUTE_TYPES = [
-  'string',
-  'number',
-  'boolean',
-  'select',
-  'multiselect',
-] as const;
-
 export const categoryAttributes = pgTable('category_attributes', {
   id: serial('id').primaryKey(),
   categoryId: smallint('category_id')
@@ -97,19 +98,6 @@ export const categoryAttributes = pgTable('category_attributes', {
   filterable: boolean('filterable').notNull().default(false),
 });
 
-const LOT_STATUSES = [
-  'draft',
-  'pending',
-  'published',
-  'rejected',
-  'reserved',
-  'sold',
-  'expired',
-  'cancelled',
-  'blocked',
-] as const;
-export type LotStatus = (typeof LOT_STATUSES)[number];
-
 export const lots = pgTable(
   'lots',
   {
@@ -122,7 +110,9 @@ export const lots = pgTable(
       .references(() => users.id)
       .notNull(),
     buyerId: uuid('buyer_id').references(() => users.id),
-    status: text('status', { enum: LOT_STATUSES }).notNull().default('draft'),
+    status: text('status', { enum: LOT_STATUSES })
+      .notNull()
+      .default(LOT_STATUS.DRAFT),
     startPrice: decimal('start_price', { precision: 12, scale: 2 }).notNull(),
     soldPrice: decimal('sold_price', { precision: 12, scale: 2 }),
     currentPrice: decimal('current_price', { precision: 12, scale: 2 }),
@@ -215,15 +205,6 @@ export const deliveryMethods = pgTable('delivery_methods', {
 export type DeliveryMethod = typeof deliveryMethods.$inferSelect;
 export type NewDeliveryMethod = typeof deliveryMethods.$inferInsert;
 
-const DELIVERY_PAYMENTS = [
-  'on_agreement',
-  'full_prepayment',
-  'partial_prepayment',
-  'on_receipt',
-  'not_provided',
-] as const;
-export type DeliveryPayment = (typeof DELIVERY_PAYMENTS)[number];
-
 export const lotDeliveryOptions = pgTable(
   'lot_delivery_options',
   {
@@ -315,17 +296,6 @@ export const lotImages = pgTable(
 export type LotImage = typeof lotImages.$inferSelect;
 export type NewLotImage = typeof lotImages.$inferInsert;
 
-export const PAYMENT_STATUSES = [
-  'created',
-  'processing',
-  'succeeded',
-  'failed',
-  'expired',
-  'refunded',
-] as const;
-export const PAYMENT_PROVIDERS = ['LiqPay', 'Stripe', 'Fondy'] as const;
-export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
-
 export const payments = pgTable(
   'payments',
   {
@@ -341,7 +311,7 @@ export const payments = pgTable(
     amount: decimal('amount', { precision: 12, scale: 2 }).notNull(),
     status: text('status', { enum: PAYMENT_STATUSES })
       .notNull()
-      .default('created'),
+      .default(PAYMENT_STATUS.CREATED),
     provider: text('provider', { enum: PAYMENT_PROVIDERS }).notNull(),
     externalId: text('external_id'),
     providerPayload: jsonb('provider_payload'),
@@ -359,7 +329,7 @@ export const payments = pgTable(
     check('payment_amount_positive', sql`${table.amount} > 0`),
     uniqueIndex('payments_lot_active_idx')
       .on(table.lotId)
-      .where(sql`${table.status} IN ('created', 'processing', 'succeeded')`),
+      .where(inList(table.status, ACTIVE_PAYMENT_STATUSES)),
     uniqueIndex('payments_external_idx')
       .on(table.provider, table.externalId)
       .where(sql`${table.externalId} IS NOT NULL`),
