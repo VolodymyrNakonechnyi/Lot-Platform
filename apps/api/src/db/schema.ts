@@ -360,6 +360,9 @@ export const payments = pgTable(
     uniqueIndex('payments_lot_active_idx')
       .on(table.lotId)
       .where(sql`${table.status} IN ('created', 'processing', 'succeeded')`),
+    uniqueIndex('payments_external_idx')
+      .on(table.provider, table.externalId)
+      .where(sql`${table.externalId} IS NOT NULL`),
   ],
 );
 
