@@ -1,5 +1,5 @@
 {
-  "id": "6a20a146-28eb-443a-b68b-d530feb3769b",
+  "id": "54bad98c-0732-4b99-8204-cb8aef5f4c2d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -594,6 +594,12 @@
           "primaryKey": true,
           "notNull": true
         },
+        "lot_id": {
+          "name": "lot_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
         "url": {
           "name": "url",
           "type": "text",
@@ -638,7 +644,21 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "lot_images_lot_id_lots_id_fk": {
+          "name": "lot_images_lot_id_lots_id_fk",
+          "tableFrom": "lot_images",
+          "tableTo": "lots",
+          "columnsFrom": [
+            "lot_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -883,12 +903,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "current_price": {
-          "name": "current_price",
-          "type": "numeric(12, 2)",
-          "primaryKey": false,
-          "notNull": false
-        },
         "min_bid_step": {
           "name": "min_bid_step",
           "type": "numeric(12, 2)",
@@ -907,20 +921,6 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
-        },
-        "watchers_count": {
-          "name": "watchers_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "views_count": {
-          "name": "views_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
         },
         "start_date": {
           "name": "start_date",
@@ -1019,14 +1019,6 @@
         "end_date_valid": {
           "name": "end_date_valid",
           "value": "\"lots\".\"start_date\" < \"lots\".\"end_date\""
-        },
-        "watchers_count_valid": {
-          "name": "watchers_count_valid",
-          "value": "\"lots\".\"watchers_count\" >= 0"
-        },
-        "views_count_valid": {
-          "name": "views_count_valid",
-          "value": "\"lots\".\"views_count\" >= 0"
         }
       },
       "isRLSEnabled": false
@@ -1119,6 +1111,28 @@
           ],
           "isUnique": true,
           "where": "\"payments\".\"status\" IN ('created', 'processing', 'succeeded')",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "payments_external_idx": {
+          "name": "payments_external_idx",
+          "columns": [
+            {
+              "expression": "provider",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "external_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"payments\".\"external_id\" IS NOT NULL",
           "concurrently": false,
           "method": "btree",
           "with": {}

@@ -54,6 +54,7 @@ CREATE TABLE "lot_delivery_options" (
 --> statement-breakpoint
 CREATE TABLE "lot_images" (
 	"id" serial PRIMARY KEY NOT NULL,
+	"lot_id" integer NOT NULL,
 	"url" text NOT NULL,
 	"sort_order" smallint DEFAULT 0 NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
@@ -83,20 +84,15 @@ CREATE TABLE "lots" (
 	"status" text DEFAULT 'draft' NOT NULL,
 	"start_price" numeric(12, 2) NOT NULL,
 	"sold_price" numeric(12, 2),
-	"current_price" numeric(12, 2),
 	"min_bid_step" numeric(12, 2) DEFAULT '1.00' NOT NULL,
 	"description" text,
 	"return_policy" text,
-	"watchers_count" integer DEFAULT 0 NOT NULL,
-	"views_count" integer DEFAULT 0 NOT NULL,
 	"start_date" timestamp NOT NULL,
 	"end_date" timestamp NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "role_valid" CHECK ("lots"."status" IN ('draft', 'pending', 'published', 'rejected', 'reserved', 'sold', 'expired', 'cancelled', 'blocked')),
-	CONSTRAINT "end_date_valid" CHECK ("lots"."start_date" < "lots"."end_date"),
-	CONSTRAINT "watchers_count_valid" CHECK ("lots"."watchers_count" >= 0),
-	CONSTRAINT "views_count_valid" CHECK ("lots"."views_count" >= 0)
+	CONSTRAINT "end_date_valid" CHECK ("lots"."start_date" < "lots"."end_date")
 );
 --> statement-breakpoint
 CREATE TABLE "payments" (
@@ -143,6 +139,7 @@ ALTER TABLE "lots_attributes" ADD CONSTRAINT "lots_attributes_lot_id_lots_id_fk"
 ALTER TABLE "lots_attributes" ADD CONSTRAINT "lots_attributes_category_attribute_id_category_attributes_id_fk" FOREIGN KEY ("category_attribute_id") REFERENCES "public"."category_attributes"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "lot_delivery_options" ADD CONSTRAINT "lot_delivery_options_lot_id_lots_id_fk" FOREIGN KEY ("lot_id") REFERENCES "public"."lots"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "lot_delivery_options" ADD CONSTRAINT "lot_delivery_options_delivery_method_id_delivery_methods_id_fk" FOREIGN KEY ("delivery_method_id") REFERENCES "public"."delivery_methods"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "lot_images" ADD CONSTRAINT "lot_images_lot_id_lots_id_fk" FOREIGN KEY ("lot_id") REFERENCES "public"."lots"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "lot_views" ADD CONSTRAINT "lot_views_lot_id_lots_id_fk" FOREIGN KEY ("lot_id") REFERENCES "public"."lots"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "lot_views" ADD CONSTRAINT "lot_views_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "lot_watchers" ADD CONSTRAINT "lot_watchers_lot_id_lots_id_fk" FOREIGN KEY ("lot_id") REFERENCES "public"."lots"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -164,4 +161,5 @@ CREATE UNIQUE INDEX "lot_views_user_idx" ON "lot_views" USING btree ("lot_id","u
 CREATE INDEX "lot_watchers_user_idx" ON "lot_watchers" USING btree ("user_id","created_at" DESC);--> statement-breakpoint
 CREATE INDEX "lots_published_category_idx" ON "lots" USING btree ("category_id") WHERE "lots"."status" = 'published';--> statement-breakpoint
 CREATE UNIQUE INDEX "payments_lot_active_idx" ON "payments" USING btree ("lot_id") WHERE "payments"."status" IN ('created', 'processing', 'succeeded');--> statement-breakpoint
+CREATE UNIQUE INDEX "payments_external_idx" ON "payments" USING btree ("provider","external_id") WHERE "payments"."external_id" IS NOT NULL;--> statement-breakpoint
 CREATE UNIQUE INDEX "users_email_idx" ON "users" USING btree (lower("email"));

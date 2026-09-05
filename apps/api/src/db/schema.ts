@@ -115,14 +115,11 @@ export const lots = pgTable(
       .default(LOT_STATUS.DRAFT),
     startPrice: decimal('start_price', { precision: 12, scale: 2 }).notNull(),
     soldPrice: decimal('sold_price', { precision: 12, scale: 2 }),
-    currentPrice: decimal('current_price', { precision: 12, scale: 2 }),
     minBidStep: decimal('min_bid_step', { precision: 12, scale: 2 })
       .notNull()
       .default('1.00'),
     description: text(),
     returnPolicy: text('return_policy'),
-    watchersCount: integer('watchers_count').notNull().default(0),
-    viewsCount: integer('views_count').notNull().default(0),
     startDate: timestamp('start_date').notNull(),
     endDate: timestamp('end_date').notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true })
@@ -136,8 +133,6 @@ export const lots = pgTable(
   (table) => [
     check('role_valid', inList(table.status, LOT_STATUSES)),
     check('end_date_valid', sql`${table.startDate} < ${table.endDate}`),
-    check('watchers_count_valid', sql`${table.watchersCount} >= 0`),
-    check('views_count_valid', sql`${table.viewsCount} >= 0`),
     index('lots_published_category_idx')
       .on(table.categoryId)
       .where(sql`${table.status} = 'published'`),
