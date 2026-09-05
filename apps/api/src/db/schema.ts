@@ -1,4 +1,3 @@
-import { table } from 'console';
 import { sql } from 'drizzle-orm';
 import { AnyPgColumn } from 'drizzle-orm/pg-core';
 import { index } from 'drizzle-orm/pg-core';
