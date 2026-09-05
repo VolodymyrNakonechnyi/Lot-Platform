@@ -200,7 +200,7 @@ export const bids = pgTable(
     lotId: integer('lot_id')
       .references(() => lots.id, { onDelete: 'cascade' })
       .notNull(),
-    amount: decimal('amount', { precision: 12, scale: 2 }),
+    amount: decimal('amount', { precision: 12, scale: 2 }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
