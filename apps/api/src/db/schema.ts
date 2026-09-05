@@ -312,3 +312,19 @@ export const lotViews = pgTable(
 
 export type LotView = typeof lotViews.$inferSelect;
 export type NewLotView = typeof lotViews.$inferInsert;
+
+export const lotImages = pgTable(
+  'lot_images',
+  {
+    id: serial('id').primaryKey(),
+    url: text().notNull(),
+    sortOrder: smallint('sort_order').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [uniqueIndex('lot_image_idx').on(table.id, table.sortOrder)],
+);
+
+export type LotImage = typeof lotImages.$inferSelect;
+export type NewLotImage = typeof lotImages.$inferInsert;
