@@ -135,6 +135,7 @@ export const lots = pgTable(
       .notNull()
       .default('1.00'),
     description: text(),
+    returnPolicy: text('return_policy'),
     startDate: timestamp('start_date').notNull(),
     endDate: timestamp('end_date').notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true })
@@ -210,3 +211,50 @@ export const bids = pgTable(
 
 export type Bid = typeof bids.$inferSelect;
 export type NewBit = typeof bids.$inferInsert;
+
+export const deliveryMethods = pgTable('delivery_methods', {
+  id: smallint('id').generatedAlwaysAsIdentity().primaryKey(),
+  name: text().notNull(),
+  slug: text().notNull().unique(),
+  sortOrder: smallint('sort_order').notNull().default(0),
+});
+
+export type DeliveryMethod = typeof deliveryMethods.$inferSelect;
+export type NewDeliveryMethod = typeof deliveryMethods.$inferInsert;
+
+const DELIVERY_PAYMENTS = [
+  'on_agreement',
+  'full_prepayment',
+  'partial_prepayment',
+  'on_receipt',
+  'not_provided',
+] as const;
+export type DeliveryPayment = (typeof DELIVERY_PAYMENTS)[number];
+
+export const lotDeliveryOptions = pgTable(
+  'lot_delivery_options',
+  {
+    lotId: integer('lot_id')
+      .references(() => lots.id)
+      .notNull(),
+    deliveryMethodId: smallint('delivery_method_id')
+      .references(() => deliveryMethods.id)
+      .notNull(),
+    payment: text('payment', { enum: DELIVERY_PAYMENTS }).notNull(),
+    note: text(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.lotId, table.deliveryMethodId] }),
+    check(
+      'delivery_payment_valid',
+      sql`${table.payment} IN (${sql.join(
+        DELIVERY_PAYMENTS.map((p) => sql`${p}`),
+        sql`, `,
+      )})`,
+    ),
+    index('lot_delivery_options_method_idx').on(table.deliveryMethodId),
+  ],
+);
+
+export type LotDeliveryOption = typeof lotDeliveryOptions.$inferSelect;
+export type NewLotDeliveryOption = typeof lotDeliveryOptions.$inferInsert;
