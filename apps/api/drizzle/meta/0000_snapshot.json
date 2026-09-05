@@ -1,5 +1,5 @@
 {
-  "id": "614910a6-dd1a-47da-9621-c5f056be8408",
+  "id": "6a20a146-28eb-443a-b68b-d530feb3769b",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -584,6 +584,67 @@
       },
       "isRLSEnabled": false
     },
+    "public.lot_images": {
+      "name": "lot_images",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "lot_image_idx": {
+          "name": "lot_image_idx",
+          "columns": [
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "sort_order",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.lot_views": {
       "name": "lot_views",
       "schema": "",
@@ -966,6 +1027,142 @@
         "views_count_valid": {
           "name": "views_count_valid",
           "value": "\"lots\".\"views_count\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.payments": {
+      "name": "payments",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "lot_id": {
+          "name": "lot_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payer_id": {
+          "name": "payer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'created'"
+        },
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "external_id": {
+          "name": "external_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "provider_payload": {
+          "name": "provider_payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "payments_lot_active_idx": {
+          "name": "payments_lot_active_idx",
+          "columns": [
+            {
+              "expression": "lot_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"payments\".\"status\" IN ('created', 'processing', 'succeeded')",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "payments_lot_id_lots_id_fk": {
+          "name": "payments_lot_id_lots_id_fk",
+          "tableFrom": "payments",
+          "tableTo": "lots",
+          "columnsFrom": [
+            "lot_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "payments_payer_id_users_id_fk": {
+          "name": "payments_payer_id_users_id_fk",
+          "tableFrom": "payments",
+          "tableTo": "users",
+          "columnsFrom": [
+            "payer_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "payment_status_valid": {
+          "name": "payment_status_valid",
+          "value": "\"payments\".\"status\" IN ('created', 'processing', 'succeeded', 'failed', 'expired', 'refunded')"
+        },
+        "payment_amount_positive": {
+          "name": "payment_amount_positive",
+          "value": "\"payments\".\"amount\" > 0"
         }
       },
       "isRLSEnabled": false

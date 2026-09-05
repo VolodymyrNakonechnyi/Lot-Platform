@@ -52,6 +52,13 @@ CREATE TABLE "lot_delivery_options" (
 	CONSTRAINT "delivery_payment_valid" CHECK ("lot_delivery_options"."payment" IN ('on_agreement', 'full_prepayment', 'partial_prepayment', 'on_receipt', 'not_provided'))
 );
 --> statement-breakpoint
+CREATE TABLE "lot_images" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"url" text NOT NULL,
+	"sort_order" smallint DEFAULT 0 NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "lot_views" (
 	"lot_id" integer NOT NULL,
 	"visitor_id" uuid NOT NULL,
@@ -92,6 +99,22 @@ CREATE TABLE "lots" (
 	CONSTRAINT "views_count_valid" CHECK ("lots"."views_count" >= 0)
 );
 --> statement-breakpoint
+CREATE TABLE "payments" (
+	"id" uuid PRIMARY KEY DEFAULT uuidv7() NOT NULL,
+	"lot_id" integer NOT NULL,
+	"payer_id" uuid NOT NULL,
+	"amount" numeric(12, 2) NOT NULL,
+	"status" text DEFAULT 'created' NOT NULL,
+	"provider" text NOT NULL,
+	"external_id" text,
+	"provider_payload" jsonb,
+	"description" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "payment_status_valid" CHECK ("payments"."status" IN ('created', 'processing', 'succeeded', 'failed', 'expired', 'refunded')),
+	CONSTRAINT "payment_amount_positive" CHECK ("payments"."amount" > 0)
+);
+--> statement-breakpoint
 CREATE TABLE "users" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7() NOT NULL,
 	"username" text NOT NULL,
@@ -127,6 +150,8 @@ ALTER TABLE "lot_watchers" ADD CONSTRAINT "lot_watchers_user_id_users_id_fk" FOR
 ALTER TABLE "lots" ADD CONSTRAINT "lots_category_id_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."categories"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "lots" ADD CONSTRAINT "lots_seller_id_users_id_fk" FOREIGN KEY ("seller_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "lots" ADD CONSTRAINT "lots_buyer_id_users_id_fk" FOREIGN KEY ("buyer_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "payments" ADD CONSTRAINT "payments_lot_id_lots_id_fk" FOREIGN KEY ("lot_id") REFERENCES "public"."lots"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "payments" ADD CONSTRAINT "payments_payer_id_users_id_fk" FOREIGN KEY ("payer_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 CREATE UNIQUE INDEX "bids_lot_amount_idx" ON "bids" USING btree ("lot_id","amount");--> statement-breakpoint
 CREATE INDEX "bids_lot_top_idx" ON "bids" USING btree ("lot_id","amount" DESC);--> statement-breakpoint
 CREATE INDEX "bids_user_idx" ON "bids" USING btree ("user_id","created_at" DESC);--> statement-breakpoint
@@ -134,7 +159,9 @@ CREATE UNIQUE INDEX "categories_id_parent_idx" ON "categories" USING btree ("id"
 CREATE INDEX "lav_attr_value_idx" ON "lots_attributes" USING btree ("category_attribute_id","value");--> statement-breakpoint
 CREATE INDEX "lav_attr_number_idx" ON "lots_attributes" USING btree ("category_attribute_id","value_number");--> statement-breakpoint
 CREATE INDEX "lot_delivery_options_method_idx" ON "lot_delivery_options" USING btree ("delivery_method_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "lot_image_idx" ON "lot_images" USING btree ("id","sort_order");--> statement-breakpoint
 CREATE UNIQUE INDEX "lot_views_user_idx" ON "lot_views" USING btree ("lot_id","user_id") WHERE "lot_views"."user_id" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "lot_watchers_user_idx" ON "lot_watchers" USING btree ("user_id","created_at" DESC);--> statement-breakpoint
 CREATE INDEX "lots_published_category_idx" ON "lots" USING btree ("category_id") WHERE "lots"."status" = 'published';--> statement-breakpoint
+CREATE UNIQUE INDEX "payments_lot_active_idx" ON "payments" USING btree ("lot_id") WHERE "payments"."status" IN ('created', 'processing', 'succeeded');--> statement-breakpoint
 CREATE UNIQUE INDEX "users_email_idx" ON "users" USING btree (lower("email"));

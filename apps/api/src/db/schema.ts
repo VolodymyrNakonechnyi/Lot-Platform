@@ -16,6 +16,7 @@ import {
   uuid,
   serial,
 } from 'drizzle-orm/pg-core';
+import { inList } from './utils';
 
 const ROLES = ['user', 'moderator', 'admin'] as const;
 export type Role = (typeof ROLES)[number];
@@ -49,13 +50,7 @@ export const users = pgTable(
   (table) => [
     uniqueIndex('users_email_idx').on(sql`lower(${table.email})`),
     check('phone_format', sql`${table.phoneNumber} ~ '^[1-9][0-9]{6,14}$'`),
-    check(
-      'role_valid',
-      sql`${table.role} IN (${sql.join(
-        ROLES.map((r) => sql.raw(`'${r}'`)),
-        sql`, `,
-      )})`,
-    ),
+    check('role_valid', inList(table.role, ROLES)),
   ],
 );
 
@@ -149,13 +144,7 @@ export const lots = pgTable(
       .defaultNow(),
   },
   (table) => [
-    check(
-      'role_valid',
-      sql`${table.status} IN (${sql.join(
-        LOT_STATUSES.map((r) => sql.raw(`'${r}'`)),
-        sql`, `,
-      )})`,
-    ),
+    check('role_valid', inList(table.status, LOT_STATUSES)),
     check('end_date_valid', sql`${table.startDate} < ${table.endDate}`),
     check('watchers_count_valid', sql`${table.watchersCount} >= 0`),
     check('views_count_valid', sql`${table.viewsCount} >= 0`),
@@ -249,13 +238,7 @@ export const lotDeliveryOptions = pgTable(
   },
   (table) => [
     primaryKey({ columns: [table.lotId, table.deliveryMethodId] }),
-    check(
-      'delivery_payment_valid',
-      sql`${table.payment} IN (${sql.join(
-        DELIVERY_PAYMENTS.map((p) => sql.raw(`'${p}'`)),
-        sql`, `,
-      )})`,
-    ),
+    check('delivery_payment_valid', inList(table.payment, DELIVERY_PAYMENTS)),
     index('lot_delivery_options_method_idx').on(table.deliveryMethodId),
   ],
 );
@@ -317,6 +300,9 @@ export const lotImages = pgTable(
   'lot_images',
   {
     id: serial('id').primaryKey(),
+    lotId: integer('lot_id')
+      .references(() => lots.id, { onDelete: 'cascade' })
+      .notNull(),
     url: text().notNull(),
     sortOrder: smallint('sort_order').notNull().default(0),
     createdAt: timestamp('created_at', { withTimezone: true })
@@ -328,3 +314,54 @@ export const lotImages = pgTable(
 
 export type LotImage = typeof lotImages.$inferSelect;
 export type NewLotImage = typeof lotImages.$inferInsert;
+
+export const PAYMENT_STATUSES = [
+  'created',
+  'processing',
+  'succeeded',
+  'failed',
+  'expired',
+  'refunded',
+] as const;
+export const PAYMENT_PROVIDERS = ['LiqPay', 'Stripe', 'Fondy'] as const;
+export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
+
+export const payments = pgTable(
+  'payments',
+  {
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`uuidv7()`),
+    lotId: integer('lot_id')
+      .references(() => lots.id)
+      .notNull(),
+    payerId: uuid('payer_id')
+      .references(() => users.id)
+      .notNull(),
+    amount: decimal('amount', { precision: 12, scale: 2 }).notNull(),
+    status: text('status', { enum: PAYMENT_STATUSES })
+      .notNull()
+      .default('created'),
+    provider: text('provider', { enum: PAYMENT_PROVIDERS }).notNull(),
+    externalId: text('external_id'),
+    providerPayload: jsonb('provider_payload'),
+    description: text('description'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    check('payment_status_valid', inList(table.status, PAYMENT_STATUSES)),
+    check('payment_amount_positive', sql`${table.amount} > 0`),
+    uniqueIndex('payments_lot_active_idx')
+      .on(table.lotId)
+      .where(sql`${table.status} IN ('created', 'processing', 'succeeded')`),
+  ],
+);
+
+export type Payment = typeof payments.$inferSelect;
+export type NewPayment = typeof payments.$inferInsert;
