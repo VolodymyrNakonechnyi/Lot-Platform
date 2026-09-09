@@ -43,7 +43,7 @@ export const users = pgTable(
     email: text('email').notNull(),
     confirmedEmail: boolean('confirmed_email').notNull().default(false),
     name: text('name').notNull(),
-    phoneNumber: text('phone_number').notNull().unique(),
+    phoneNumber: text('phone_number').unique(),
     confirmedPhoneNumber: boolean('confirmed_phone_number')
       .notNull()
       .default(false),

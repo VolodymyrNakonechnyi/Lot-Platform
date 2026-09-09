@@ -8,6 +8,13 @@
       "when": 1788638980677,
       "tag": "0000_regular_wind_dancer",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788968231621,
+      "tag": "0001_naive_nico_minoru",
+      "breakpoints": true
     }
   ]
 }
