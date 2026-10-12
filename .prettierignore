@@ -1,0 +1,11 @@
+node_modules/
+dist/
+build/
+coverage/
+
+# Drizzle-generated migrations and snapshots
+apps/api/drizzle/
+
+pnpm-lock.yaml
+package-lock.json
+*.drawio

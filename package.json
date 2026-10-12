@@ -13,9 +13,12 @@
     "typecheck": "pnpm -r --parallel typecheck",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
-    "db:psql": "docker compose exec postgres psql -U user -d bullmq"
+    "db:psql": "docker compose exec postgres psql -U user -d bullmq",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
-    "@types/node": "^24.13.3"
+    "@types/node": "^24.13.3",
+    "prettier": "^3.4.2"
   }
 }
