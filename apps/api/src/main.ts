@@ -1,6 +1,5 @@
 import { cleanupOpenApiDoc } from 'nestjs-zod';
 import { existsSync } from 'node:fs';
-import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
@@ -22,14 +21,6 @@ async function bootstrap() {
   SwaggerModule.setup('docs', app, cleanupOpenApiDoc(openApiDoc));
   app.enableShutdownHooks();
   app.enableCors();
-
-  app.useGlobalPipes(
-    new ValidationPipe({
-      transform: true,
-      whitelist: true,
-      forbidNonWhitelisted: true,
-    }),
-  );
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);

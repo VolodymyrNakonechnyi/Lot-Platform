@@ -61,7 +61,9 @@ async function seed(): Promise<void> {
       .returning();
 
     const total = await db.$count(users);
-    console.log(`seeded ${inserted.length} of ${seedUsers.length}, users in table: ${total}`);
+    console.log(
+      `seeded ${inserted.length} of ${seedUsers.length}, users in table: ${total}`,
+    );
   } finally {
     await pool.end();
   }

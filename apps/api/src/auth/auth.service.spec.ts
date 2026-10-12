@@ -14,7 +14,8 @@ jest.mock('../common/password');
 const hashed = jest.mocked(hashPassword);
 const verified = jest.mocked(verifyPassword);
 
-const HASH = '$argon2id$v=19$m=65536,t=3,p=4$bm9uY2VfMTZfYnl0ZXM$ZGVyaXZlZEtleQ';
+const HASH =
+  '$argon2id$v=19$m=65536,t=3,p=4$bm9uY2VfMTZfYnl0ZXM$ZGVyaXZlZEtleQ';
 
 const makeUser = (overrides: Partial<User> = {}): User => ({
   id: '0199a1f0-0000-7000-8000-000000000001',
@@ -61,12 +62,16 @@ describe('AuthService', () => {
   beforeEach(async () => {
     users = {
       findByEmail: jest.fn().mockResolvedValue(undefined),
-      create: jest.fn().mockImplementation((data: Partial<User>) =>
-        Promise.resolve(makeUser({ ...data, confirmedEmail: false })),
-      ),
-      update: jest.fn().mockImplementation((id: string, data: Partial<User>) =>
-        Promise.resolve(makeUser({ ...data, id, confirmedEmail: false })),
-      ),
+      create: jest
+        .fn()
+        .mockImplementation((data: Partial<User>) =>
+          Promise.resolve(makeUser({ ...data, confirmedEmail: false })),
+        ),
+      update: jest
+        .fn()
+        .mockImplementation((id: string, data: Partial<User>) =>
+          Promise.resolve(makeUser({ ...data, id, confirmedEmail: false })),
+        ),
     };
 
     hashed.mockResolvedValue(HASH);
