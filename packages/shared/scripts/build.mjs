@@ -17,15 +17,26 @@ const targets = [
 
 function tsc(config) {
   return new Promise((resolve, reject) => {
-    const args = ['-p', config, ...(watch ? ['--watch', '--preserveWatchOutput'] : [])];
+    const args = [
+      '-p',
+      config,
+      ...(watch ? ['--watch', '--preserveWatchOutput'] : []),
+    ];
     const p = spawn('npx', ['tsc', ...args], { stdio: 'inherit' });
-    p.on('exit', (code) => (code === 0 || watch ? resolve() : reject(new Error(`tsc ${config} -> ${code}`))));
+    p.on('exit', (code) =>
+      code === 0 || watch
+        ? resolve()
+        : reject(new Error(`tsc ${config} -> ${code}`)),
+    );
   });
 }
 
 async function marker({ dir, type }) {
   await mkdir(dir, { recursive: true });
-  await writeFile(`${dir}/package.json`, JSON.stringify({ type }, null, 2) + '\n');
+  await writeFile(
+    `${dir}/package.json`,
+    JSON.stringify({ type }, null, 2) + '\n',
+  );
 }
 
 if (watch) {
