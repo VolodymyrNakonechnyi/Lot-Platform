@@ -12,7 +12,10 @@ export class UserService {
   }
 
   async findByEmail(email: string): Promise<User | undefined> {
-    const [user] = await this.db.select().from(users).where(eq(users.email, email));
+    const [user] = await this.db
+      .select()
+      .from(users)
+      .where(eq(users.email, email));
     return user;
   }
 

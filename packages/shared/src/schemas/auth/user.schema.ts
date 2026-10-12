@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ROLES } from '../../enums.js';
 
 const emailSchema = z
 	.string()
@@ -27,3 +28,20 @@ export const registerSchema = z.strictObject({
 });
 
 export type RegisterRequest = z.infer<typeof registerSchema>;
+
+export const publicUserSchema = z.object({
+	id: z.uuid(),
+	username: z.string(),
+	avatarUrl: z.string().nullable(),
+	role: z.enum(ROLES),
+	email: z.email(),
+	confirmedEmail: z.boolean(),
+	name: z.string(),
+	phoneNumber: z.string().nullable(),
+	confirmedPhoneNumber: z.boolean(),
+	updatedAt: z.date(),
+	createdAt: z.date(),
+	lastLogin: z.date().nullable(),
+});
+
+export type PublicUser = z.infer<typeof publicUserSchema>;
