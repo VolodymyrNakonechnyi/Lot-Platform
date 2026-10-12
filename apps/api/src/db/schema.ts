@@ -28,7 +28,7 @@ import {
   PAYMENT_STATUSES,
   ROLE,
   ROLES,
-} from '../common/consts';
+} from '@app/contracts';
 
 export const users = pgTable(
   'users',
