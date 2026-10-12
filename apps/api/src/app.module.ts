@@ -7,6 +7,7 @@ import { UserModule } from './user/user.module';
 import { APP_INTERCEPTOR, APP_PIPE, APP_FILTER } from '@nestjs/core';
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 import { HttpExceptionFilter } from './common/http-exception.filter';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { HttpExceptionFilter } from './common/http-exception.filter';
       configKey: 'alternative-config',
       name: 'video',
     }),
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [
