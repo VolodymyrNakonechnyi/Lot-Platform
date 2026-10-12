@@ -23,4 +23,13 @@ export class UserService {
     const [user] = await this.db.insert(users).values(data).returning();
     return user;
   }
+
+  async update(id: string, data: Partial<NewUser>): Promise<User> {
+    const [user] = await this.db
+      .update(users)
+      .set(data)
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
 }
