@@ -11,14 +11,21 @@
     "dev:front": "pnpm --filter ./apps/frontend dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r --parallel typecheck",
+    "test": "pnpm -r --parallel test",
+    "lint": "pnpm -r --parallel lint",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "db:psql": "docker compose exec postgres psql -U user -d bullmq",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "prepare": "husky"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
     "@types/node": "^24.13.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
     "prettier": "^3.4.2"
   }
 }
