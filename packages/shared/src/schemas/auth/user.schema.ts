@@ -1,14 +1,14 @@
-import { email, z } from 'zod';
+import { z } from 'zod';
 import { ROLES } from '../../enums.js';
 
-const emailSchema = z
+export const emailSchema = z
   .string()
   .trim()
   .toLowerCase()
   .pipe(z.email({ message: 'invalid_email' }))
   .pipe(z.string().max(254));
 
-const nameSchema = z
+export const nameSchema = z
   .string()
   .trim()
   .transform((v) => v.replace(/\s+/g, ' '))

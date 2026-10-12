@@ -1,14 +1,14 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
-  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { hashPassword, verifyPassword } from 'src/common/password';
 import { UserService } from 'src/user/user.service';
 import { CreateUserDto, LoginUserDto } from './dto/user.dto';
 import { generateUsername } from 'src/common/username';
-import type { PublicUser } from '@app/contracts';
+import { emailSchema, type PublicUser } from '@app/contracts';
 
 @Injectable()
 export class AuthService {
@@ -34,21 +34,25 @@ export class AuthService {
   }
 
   async login(user: LoginUserDto): Promise<PublicUser> {
-    const { email, password } = user;
+    const email = emailSchema.parse(user.email);
 
     const existingUser = await this.users.findByEmail(email);
 
     if (!existingUser) {
-      throw new NotFoundException("user've never existed");
+      throw new UnauthorizedException('non existing user with this email');
     }
 
     const verifiedPassword = await verifyPassword(
       existingUser.password,
-      password,
+      user.password,
     );
 
     if (!verifiedPassword) {
-      throw new UnauthorizedException('not correct password or email');
+      throw new UnauthorizedException('wrong email or password');
+    }
+
+    if (!existingUser.confirmedEmail) {
+      throw new ForbiddenException('email is not confirmed');
     }
 
     const { password: _hash, ...publicUser } = existingUser;
