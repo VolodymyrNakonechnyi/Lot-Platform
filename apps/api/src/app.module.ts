@@ -8,6 +8,8 @@ import { APP_INTERCEPTOR, APP_PIPE, APP_FILTER } from '@nestjs/core';
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 import { HttpExceptionFilter } from './common/http-exception.filter';
 import { AuthModule } from './auth/auth.module';
+import { AuthenticationModule } from '@nestjs/authentication';
+import './auth/authentication.types';
 
 @Module({
   imports: [
@@ -29,6 +31,17 @@ import { AuthModule } from './auth/auth.module';
     BullModule.registerQueue({
       configKey: 'alternative-config',
       name: 'video',
+    }),
+    AuthenticationModule.forRoot({
+      session: {
+        trustedOrigins: process.env.WEB_ORIGIN
+          ? [process.env.WEB_ORIGIN]
+          : undefined,
+        metadata: (request) => ({
+          ip: request.ip,
+          userAgent: request.headers['user-agent'],
+        }),
+      },
     }),
     AuthModule,
   ],
