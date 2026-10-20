@@ -41,6 +41,8 @@ import './auth/authentication.types';
           ip: request.ip,
           userAgent: request.headers['user-agent'],
         }),
+        absoluteTtl: '14d',
+        idleTtl: '3d',
       },
     }),
     AuthModule,
