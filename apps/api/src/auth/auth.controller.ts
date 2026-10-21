@@ -7,34 +7,56 @@ import {
   Post,
   UnauthorizedException,
 } from '@nestjs/common';
-import type { PublicUser } from '@app/contracts';
+import type { PublicUser, SignInResponse } from '@app/contracts';
 import { CurrentUser, Public, SignInService } from '@nestjs/authentication';
 import { ZodSerializerDto } from 'nestjs-zod';
 import { AuthService } from './auth.service';
-import { CreateUserDto, LoginUserDto, PublicUserDto } from './dto/user.dto';
+import {
+  CreateUserDto,
+  LoginUserDto,
+  PublicUserDto,
+  SignInResponseDto,
+} from './dto/user.dto';
+import { CredentialsService } from './credentials.service';
 
+@Public()
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly auth: AuthService,
+    private readonly createntialsService: CredentialsService,
     private readonly signInService: SignInService,
   ) {}
 
-  @Post('register')
+  @Post('sign-up')
   @Public()
   @ZodSerializerDto(PublicUserDto)
-  register(@Body() dto: CreateUserDto): Promise<PublicUser> {
-    return this.auth.register(dto);
+  async register(@Body() dto: CreateUserDto): Promise<PublicUser> {
+    const user = await this.createntialsService.register(
+      dto.email,
+      dto.name,
+      dto.password,
+    );
+
+    await this.signInService.signIn(user.id, { method: 'password' });
+    return user;
   }
 
-  @Post('login')
+  @Post('sign-in')
   @Public()
   @HttpCode(HttpStatus.OK)
-  @ZodSerializerDto(PublicUserDto)
-  async login(@Body() dto: LoginUserDto): Promise<PublicUser> {
-    const user = await this.auth.login(dto);
-    await this.signInService.signIn(user.id);
-    return user;
+  @ZodSerializerDto(SignInResponseDto)
+  async login(@Body() dto: LoginUserDto): Promise<SignInResponse> {
+    const user = await this.createntialsService.verify(dto.email, dto.password);
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    const { session } = await this.signInService.signIn(user.id, {
+      method: 'password',
+    });
+    return { mfaRequired: session.mfa === 'pending' };
   }
 
   @Get('me')

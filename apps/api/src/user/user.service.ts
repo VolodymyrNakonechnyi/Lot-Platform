@@ -32,4 +32,12 @@ export class UserService {
       .returning();
     return user;
   }
+
+  async updatePassword(email: string, newPassword: string) {
+    await this.db
+      .update(users)
+      .set({ password: newPassword })
+      .where(eq(users.email, email))
+      .returning();
+  }
 }
