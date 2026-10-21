@@ -50,3 +50,9 @@ export const publicUserSchema = z.object({
 });
 
 export type PublicUser = z.infer<typeof publicUserSchema>;
+
+export const signInResponseSchema = z.object({
+  mfaRequired: z.boolean(),
+});
+
+export type SignInResponse = z.infer<typeof signInResponseSchema>;
