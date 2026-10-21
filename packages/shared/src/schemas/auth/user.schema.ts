@@ -1,12 +1,11 @@
 import { z } from 'zod';
 import { ROLES } from '../../enums.js';
+import { normalizeEmail } from '../../normalize.js';
 
 export const emailSchema = z
   .string()
-  .trim()
-  .toLowerCase()
-  .pipe(z.email({ message: 'invalid_email' }))
-  .pipe(z.string().max(254));
+  .transform(normalizeEmail)
+  .pipe(z.email({ message: 'invalid_email' }).max(254, 'email_too_long'));
 
 export const nameSchema = z
   .string()

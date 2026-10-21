@@ -10,6 +10,13 @@ import { HttpExceptionFilter } from './common/http-exception.filter';
 import { AuthModule } from './auth/auth.module';
 import { AuthenticationModule } from '@nestjs/authentication';
 import './auth/authentication.types';
+import {
+  FileTemplateEngine,
+  LogMailTransport,
+  MailModule,
+  SmtpTransport,
+} from '@nestjs/mail';
+import { join } from 'node:path';
 
 @Module({
   imports: [
@@ -31,6 +38,20 @@ import './auth/authentication.types';
     BullModule.registerQueue({
       configKey: 'alternative-config',
       name: 'video',
+    }),
+    MailModule.forRootAsync({
+      useFactory: () => ({
+        // Your provider in production. In development, each email (links
+        // included) is printed to the log.
+        transport: process.env.SMTP_URL
+          ? new SmtpTransport({ url: process.env.SMTP_URL })
+          : new LogMailTransport(),
+        // The emails' HTML: the templates in mail/templates, next to this file
+        templates: new FileTemplateEngine({
+          dir: join(__dirname, 'mail/templates'),
+        }),
+        from: 'Accounts <accounts@example.com>',
+      }),
     }),
     AuthenticationModule.forRoot({
       session: {
