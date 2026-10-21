@@ -1,8 +1,8 @@
 import { existsSync } from 'node:fs';
+import { PasswordHasher } from '@nestjs/authentication';
 import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
-import { hashPassword } from '../common/password';
 import { users, type NewUser } from './schema';
 
 const SEED_PASSWORD = process.env.SEED_PASSWORD ?? 'mockadmin123';
@@ -53,15 +53,20 @@ async function seed(): Promise<void> {
   const db = drizzle(pool);
 
   try {
-    const password = await hashPassword(SEED_PASSWORD);
+    const hasher = new PasswordHasher();
+    const values: NewUser[] = [];
+
+    for (const user of seedUsers) {
+      values.push({ ...user, password: await hasher.hash(SEED_PASSWORD) });
+    }
 
     const seeded = await db
       .insert(users)
-      .values(seedUsers.map((user) => ({ ...user, password })))
+      .values(values)
       .onConflictDoUpdate({
         target: users.username,
         set: {
-          password,
+          password: sql`excluded.password`,
           email: sql`excluded.email`,
           role: sql`excluded.role`,
           confirmedEmail: sql`excluded.confirmed_email`,

@@ -10,7 +10,6 @@ import {
 import type { PublicUser, SignInResponse } from '@app/contracts';
 import { CurrentUser, Public, SignInService } from '@nestjs/authentication';
 import { ZodSerializerDto } from 'nestjs-zod';
-import { AuthService } from './auth.service';
 import {
   CreateUserDto,
   LoginUserDto,
@@ -19,18 +18,16 @@ import {
 } from './dto/user.dto';
 import { CredentialsService } from './credentials.service';
 
-@Public()
 @Controller('auth')
 export class AuthController {
   constructor(
-    private readonly auth: AuthService,
     private readonly createntialsService: CredentialsService,
     private readonly signInService: SignInService,
   ) {}
 
   @Post('sign-up')
   @Public()
-  @ZodSerializerDto(PublicUserDto)
+  @ZodSerializerDto(SignInResponseDto)
   async register(@Body() dto: CreateUserDto): Promise<PublicUser> {
     const user = await this.createntialsService.register(
       dto.email,
