@@ -11,8 +11,9 @@ export const emailSchema = z
 export const nameSchema = z
   .string()
   .trim()
-  .transform((v) => v.replace(/\s+/g, ' '))
-  .pipe(z.string().min(1, 'name_required').max(100));
+  .overwrite((v) => v.replace(/\s+/g, ' '))
+  .min(1, 'name_required')
+  .max(100);
 
 const passwordSchema = z
   .string()
