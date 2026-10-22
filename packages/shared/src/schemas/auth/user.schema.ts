@@ -4,8 +4,9 @@ import { normalizeEmail } from '../../normalize.js';
 
 export const emailSchema = z
   .string()
-  .transform(normalizeEmail)
-  .pipe(z.email({ message: 'invalid_email' }).max(254, 'email_too_long'));
+  .trim()
+  .pipe(z.email({ message: 'invalid_email' }).max(254, 'email_too_long'))
+  .transform(normalizeEmail);
 
 export const nameSchema = z
   .string()
@@ -38,7 +39,7 @@ export const publicUserSchema = z.object({
   username: z.string(),
   avatarUrl: z.string().nullable(),
   role: z.enum(ROLES),
-  email: z.email(),
+  email: emailSchema,
   confirmedEmail: z.boolean(),
   name: z.string(),
   phoneNumber: z.string().nullable(),
@@ -57,7 +58,7 @@ export const signInResponseSchema = z.object({
 export type SignInResponse = z.infer<typeof signInResponseSchema>;
 
 export const verifyEmailResponseSchema = z.object({
-  email: z.email(),
+  email: emailSchema,
   emailVerified: z.boolean(),
 });
 
