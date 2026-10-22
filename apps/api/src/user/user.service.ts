@@ -37,11 +37,11 @@ export class UserService {
     return user;
   }
 
-  async updatePassword(email: string, newPassword: string) {
+  async updatePassword(id: string, newPassword: string) {
     await this.db
       .update(users)
       .set({ password: newPassword })
-      .where(sameEmail(email));
+      .where(eq(users.id, id));
   }
 
   async markEmailVerified(userId: string, email: string): Promise<boolean> {

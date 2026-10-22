@@ -6,6 +6,7 @@ import { DrizzleSessionStore } from './stores/drizzle-session.store';
 import { CredentialsService } from './credentials.service';
 import { EmailVerificationMailer } from './email-verification.mailer';
 import { EmailVerificationController } from './email-verification.controller';
+import { PasswordResetMailer } from './password-reset.mailer';
 
 @Module({
   imports: [UserModule],
@@ -14,6 +15,7 @@ import { EmailVerificationController } from './email-verification.controller';
     SessionAuth,
     DrizzleSessionStore,
     EmailVerificationMailer,
+    PasswordResetMailer,
   ],
   controllers: [AuthController, EmailVerificationController],
 })

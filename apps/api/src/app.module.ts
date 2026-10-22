@@ -71,6 +71,7 @@ import { join } from 'node:path';
           idleTtl: '3d',
         },
         emailVerification: { url: `${process.env.WEB_ORIGIN}/verify-email` },
+        passwordReset: { url: `${process.env.APP_URL}/reset-password` },
       }),
     }),
     AuthModule,
