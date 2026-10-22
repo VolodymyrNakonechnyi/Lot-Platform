@@ -22,18 +22,22 @@ import { join } from 'node:path';
   imports: [
     DbModule,
     UserModule,
-    BullModule.forRoot({
-      connection: {
-        host: process.env.REDIS_HOST ?? 'localhost',
-        port: Number(process.env.REDIS_PORT ?? 6379),
-      },
+    BullModule.forRootAsync({
+      useFactory: () => ({
+        connection: {
+          host: process.env.REDIS_HOST ?? 'localhost',
+          port: Number(process.env.REDIS_PORT ?? 6379),
+        },
+      }),
     }),
-    BullModule.forRoot('alternative-config', {
-      connection: {
-        host: process.env.REDIS_HOST ?? 'localhost',
-        port: Number(process.env.REDIS_PORT ?? 6379),
-      },
-      prefix: '{alt}',
+    BullModule.forRootAsync('alternative-config', {
+      useFactory: () => ({
+        connection: {
+          host: process.env.REDIS_HOST ?? 'localhost',
+          port: Number(process.env.REDIS_PORT ?? 6379),
+        },
+        prefix: '{alt}',
+      }),
     }),
     BullModule.registerQueue({
       configKey: 'alternative-config',
@@ -50,22 +54,24 @@ import { join } from 'node:path';
         templates: new FileTemplateEngine({
           dir: join(__dirname, 'mail/templates'),
         }),
-        from: 'Accounts <accounts@example.com>',
+        from: process.env.MAIL_FROM ?? 'Accounts <accounts@example.com>',
       }),
     }),
-    AuthenticationModule.forRoot({
-      session: {
-        trustedOrigins: process.env.WEB_ORIGIN
-          ? [process.env.WEB_ORIGIN]
-          : undefined,
-        metadata: (request) => ({
-          ip: request.ip,
-          userAgent: request.headers['user-agent'],
-        }),
-        absoluteTtl: '14d',
-        idleTtl: '3d',
-      },
-      emailVerification: { url: `${process.env.APP_URL}/verify-email` },
+    AuthenticationModule.forRootAsync({
+      useFactory: () => ({
+        session: {
+          trustedOrigins: process.env.WEB_ORIGIN
+            ? [process.env.WEB_ORIGIN]
+            : undefined,
+          metadata: (request) => ({
+            ip: request.ip,
+            userAgent: request.headers['user-agent'],
+          }),
+          absoluteTtl: '14d',
+          idleTtl: '3d',
+        },
+        emailVerification: { url: `${process.env.WEB_ORIGIN}/verify-email` },
+      }),
     }),
     AuthModule,
   ],

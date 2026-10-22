@@ -34,18 +34,20 @@ export class AuthController {
   @Post('sign-up')
   @Public()
   @ZodSerializerDto(SignInResponseDto)
-  async register(@Body() dto: CreateUserDto): Promise<PublicUser> {
+  async register(@Body() dto: CreateUserDto): Promise<SignInResponse> {
     const user = await this.createntialsService.register(
       dto.email,
       dto.name,
       dto.password,
     );
 
-    await this.signInService.signIn(user.id, { method: 'password' });
+    const { session } = await this.signInService.signIn(user.id, {
+      method: 'password',
+    });
 
     // The link in this email proves the customer owns the address.
     await this.emailVerificationService.send(user);
-    return user;
+    return { mfaRequired: session.mfa === 'pending' };
   }
 
   @Post('sign-in')

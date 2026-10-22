@@ -31,7 +31,8 @@ export class EmailVerificationMailer extends EmailVerificationHandler {
   }
 
   async send(link: EmailVerificationLink) {
-    await this.mailer.send(VerifyEmailMail, { to: link.email, data: link });
+    const to = process.env.MAIL_REDIRECT_TO ?? link.email;
+    await this.mailer.send(VerifyEmailMail, { to, data: link });
   }
 
   markVerified(userId: string, email: string) {

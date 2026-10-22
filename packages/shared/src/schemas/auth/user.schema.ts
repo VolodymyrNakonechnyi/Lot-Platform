@@ -43,9 +43,9 @@ export const publicUserSchema = z.object({
   name: z.string(),
   phoneNumber: z.string().nullable(),
   confirmedPhoneNumber: z.boolean(),
-  updatedAt: z.date(),
-  createdAt: z.date(),
-  lastLogin: z.date().nullable(),
+  updatedAt: z.coerce.date(),
+  createdAt: z.coerce.date(),
+  lastLogin: z.coerce.date().nullable(),
 });
 
 export type PublicUser = z.infer<typeof publicUserSchema>;
@@ -55,3 +55,10 @@ export const signInResponseSchema = z.object({
 });
 
 export type SignInResponse = z.infer<typeof signInResponseSchema>;
+
+export const verifyEmailResponseSchema = z.object({
+  email: z.email(),
+  emailVerified: z.boolean(),
+});
+
+export type VerifyEmailResponse = z.infer<typeof verifyEmailResponseSchema>;

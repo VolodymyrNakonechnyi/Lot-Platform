@@ -11,6 +11,9 @@ import {
   EmailVerificationService,
   Public,
 } from '@nestjs/authentication';
+import { ZodSerializerDto } from 'nestjs-zod';
+import type { VerifyEmailResponse } from '@app/contracts';
+import { VerifyEmailResponseDto } from './dto/user.dto';
 import type { User } from 'src/db/schema';
 
 @Controller('auth/email')
@@ -22,7 +25,8 @@ export class EmailVerificationController {
   @Public()
   @Post('verify')
   @HttpCode(200)
-  async verify(@Body('token') token: string) {
+  @ZodSerializerDto(VerifyEmailResponseDto)
+  async verify(@Body('token') token: string): Promise<VerifyEmailResponse> {
     const verified = await this.emailVerificationService.verify(token);
     if (!verified) {
       throw new BadRequestException('Invalid or expired link');
