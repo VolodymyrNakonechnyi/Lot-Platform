@@ -8,7 +8,12 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import type { PublicUser, SignInResponse } from '@app/contracts';
-import { CurrentUser, Public, SignInService } from '@nestjs/authentication';
+import {
+  CurrentUser,
+  EmailVerificationService,
+  Public,
+  SignInService,
+} from '@nestjs/authentication';
 import { ZodSerializerDto } from 'nestjs-zod';
 import {
   CreateUserDto,
@@ -22,6 +27,7 @@ import { CredentialsService } from './credentials.service';
 export class AuthController {
   constructor(
     private readonly createntialsService: CredentialsService,
+    private readonly emailVerificationService: EmailVerificationService,
     private readonly signInService: SignInService,
   ) {}
 
@@ -36,6 +42,9 @@ export class AuthController {
     );
 
     await this.signInService.signIn(user.id, { method: 'password' });
+
+    // The link in this email proves the customer owns the address.
+    await this.emailVerificationService.send(user);
     return user;
   }
 

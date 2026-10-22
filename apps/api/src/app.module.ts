@@ -65,6 +65,7 @@ import { join } from 'node:path';
         absoluteTtl: '14d',
         idleTtl: '3d',
       },
+      emailVerification: { url: `${process.env.APP_URL}/verify-email` },
     }),
     AuthModule,
   ],
