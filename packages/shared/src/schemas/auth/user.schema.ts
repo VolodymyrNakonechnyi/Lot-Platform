@@ -21,6 +21,13 @@ const passwordSchema = z
   .regex(/[a-zA-Z]/, { message: 'password_needs_letter' })
   .regex(/[0-9]/, { message: 'password_needs_digit' });
 
+export const resetPasswordSchema = z.object({
+  token: z.string(),
+  password: passwordSchema,
+});
+
+export type ResetPassword = z.infer<typeof resetPasswordSchema>;
+
 export const loginSchema = z.strictObject({
   email: emailSchema,
   password: passwordSchema,
