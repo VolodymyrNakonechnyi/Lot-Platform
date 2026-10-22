@@ -1,0 +1,25 @@
+.verify {
+  margin: auto;
+  padding: 48px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.verify-ok {
+  color: var(--text-h);
+}
+
+.verify-error {
+  color: #d02f2f;
+}
+
+.verify-link {
+  color: var(--accent);
+  border: 1px solid var(--accent-border);
+  background: var(--accent-bg);
+  border-radius: 8px;
+  padding: 8px 20px;
+  text-decoration: none;
+}
