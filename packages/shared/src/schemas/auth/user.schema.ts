@@ -22,8 +22,14 @@ const passwordSchema = z
   .regex(/[a-zA-Z]/, { message: 'password_needs_letter' })
   .regex(/[0-9]/, { message: 'password_needs_digit' });
 
-export const resetPasswordSchema = z.object({
-  token: z.string(),
+export const forgotPasswordSchema = z.strictObject({
+  email: emailSchema,
+});
+
+export type ForgotPassword = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z.strictObject({
+  token: z.string().min(1, 'token_required'),
   password: passwordSchema,
 });
 
@@ -64,6 +70,12 @@ export const signInResponseSchema = z.object({
 });
 
 export type SignInResponse = z.infer<typeof signInResponseSchema>;
+
+export const verifyEmailSchema = z.strictObject({
+  token: z.string().min(1, 'token_required'),
+});
+
+export type VerifyEmailRequest = z.infer<typeof verifyEmailSchema>;
 
 export const verifyEmailResponseSchema = z.object({
   email: emailSchema,

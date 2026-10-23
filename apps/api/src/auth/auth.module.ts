@@ -7,6 +7,7 @@ import { CredentialsService } from './credentials.service';
 import { EmailVerificationMailer } from './email-verification.mailer';
 import { EmailVerificationController } from './email-verification.controller';
 import { PasswordResetMailer } from './password-reset.mailer';
+import { PasswordResetController } from './password-reset.controller';
 
 @Module({
   imports: [UserModule],
@@ -17,6 +18,10 @@ import { PasswordResetMailer } from './password-reset.mailer';
     EmailVerificationMailer,
     PasswordResetMailer,
   ],
-  controllers: [AuthController, EmailVerificationController],
+  controllers: [
+    AuthController,
+    EmailVerificationController,
+    PasswordResetController,
+  ],
 })
 export class AuthModule {}
