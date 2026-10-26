@@ -72,6 +72,14 @@ import { join } from 'node:path';
         },
         emailVerification: { url: `${process.env.WEB_ORIGIN}/verify-email` },
         passwordReset: { url: `${process.env.WEB_ORIGIN}/reset-password` },
+        accessToken: {
+          key: process.env.JWT_PRIVATE_KEY!, // PEM private key P-256
+          alg: 'ES256',
+          kid: process.env.JWT_KID!,
+          issuer: 'https://api.example.com',
+          audience: 'mobile-app',
+          ttl: '15m',
+        },
       }),
     }),
     AuthModule,
