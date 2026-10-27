@@ -10,9 +10,10 @@ import {
   CurrentUser,
   EmailVerificationService,
 } from '@nestjs/authentication';
-import { EmailDto, PublicUserDto } from 'src/auth/dto/user.dto.js';
+import { PublicUserDto } from 'src/auth/dto/user.dto';
 import { UserService } from './user.service';
 import { ZodSerializerDto } from 'nestjs-zod';
+import { emailSchema, type EmailDto } from '@app/contracts';
 
 @Controller('me')
 export class MeController {
@@ -31,7 +32,10 @@ export class MeController {
   // session (or token) that passed the second factor.
   @Authenticate({ mfa: true })
   @Patch('email')
-  async changeEmail(@CurrentUser('id') userId: string, @Body() body: EmailDto) {
+  async changeEmail(
+    @CurrentUser('id') userId: string,
+    @Body({ schema: emailSchema }) body: EmailDto,
+  ) {
     if (await this.usersService.findByEmail(body.email)) {
       throw new ConflictException('Email already registered');
     }

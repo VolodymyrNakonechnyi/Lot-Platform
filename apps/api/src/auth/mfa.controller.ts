@@ -12,7 +12,13 @@ import {
   Public,
   SignInService,
 } from '@nestjs/authentication';
-import type { PublicUser } from '@app/contracts';
+import {
+  mfaConfirmSchema,
+  mfaVerifySchema,
+  type MfaConfirmDto,
+  type MfaVerifyDto,
+  type PublicUser,
+} from '@app/contracts';
 
 @Controller('auth/mfa')
 export class MfaController {
@@ -41,8 +47,11 @@ export class MfaController {
   // Recovery codes are shown once.
   @Post('confirm')
   @HttpCode(200)
-  async confirm(@CurrentUser('id') userId: string, @Body('code') code: string) {
-    if (!(await this.signInService.confirmMfa(userId, code))) {
+  async confirm(
+    @CurrentUser('id') userId: string,
+    @Body({ schema: mfaConfirmSchema }) body: MfaConfirmDto,
+  ) {
+    if (!(await this.signInService.confirmMfa(userId, body.code))) {
       throw new UnauthorizedException('Invalid code');
     }
     return {
@@ -55,11 +64,8 @@ export class MfaController {
   @Public()
   @Post('verify')
   @HttpCode(200)
-  async verify(
-    @Body('code') code: string | undefined,
-    @Body('recoveryCode') recoveryCode: string | undefined,
-  ) {
-    const issued = await this.signInService.completeMfa({ code, recoveryCode });
+  async verify(@Body({ schema: mfaVerifySchema }) body: MfaVerifyDto) {
+    const issued = await this.signInService.completeMfa(body);
     if (!issued) {
       throw new UnauthorizedException('Invalid code');
     }

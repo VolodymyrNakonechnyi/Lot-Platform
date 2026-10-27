@@ -6,8 +6,13 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Public, TokenService } from '@nestjs/authentication';
-import { LoginUserDto } from './dto/user.dto.js';
-import { CredentialsService } from './credentials.service.js';
+import {
+  loginSchema,
+  refreshTokenSchema,
+  type LoginDto,
+  type RefreshTokenDto,
+} from '@app/contracts';
+import { CredentialsService } from './credentials.service';
 
 @Public()
 @Controller('auth/token')
@@ -19,7 +24,7 @@ export class TokensController {
 
   @Post()
   @HttpCode(200)
-  async issue(@Body() body: LoginUserDto) {
+  async issue(@Body({ schema: loginSchema }) body: LoginDto) {
     const user = await this.credentialsService.verify(
       body.email,
       body.password,
@@ -37,7 +42,7 @@ export class TokensController {
   // An unknown, expired or reused refresh token gets a 401.
   @Post('refresh')
   @HttpCode(200)
-  refresh(@Body('refreshToken') refreshToken: string) {
-    return this.tokenService.refresh(refreshToken);
+  refresh(@Body({ schema: refreshTokenSchema }) body: RefreshTokenDto) {
+    return this.tokenService.refresh(body.refreshToken);
   }
 }

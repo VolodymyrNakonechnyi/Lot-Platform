@@ -26,19 +26,21 @@ export const emailSchema = z.strictObject({
   email: email,
 });
 
-export type EmailSchema = z.infer<typeof emailSchema>;
+export type EmailDto = z.infer<typeof emailSchema>;
 
 export const resetPasswordSchema = z.strictObject({
   token: z.string().min(1, 'token_required'),
-  password: email,
+  password: password,
 });
 
-export type ResetPassword = z.infer<typeof resetPasswordSchema>;
+export type ResetPasswordDto = z.infer<typeof resetPasswordSchema>;
 
 export const loginSchema = z.strictObject({
   email: email,
-  password: password,
+  password: z.string().min(1, 'password_required'),
 });
+
+export type LoginDto = z.infer<typeof loginSchema>;
 
 export const registerSchema = z.strictObject({
   email: email,
@@ -46,7 +48,7 @@ export const registerSchema = z.strictObject({
   name: name,
 });
 
-export type RegisterRequest = z.infer<typeof registerSchema>;
+export type RegisterDto = z.infer<typeof registerSchema>;
 
 export const publicUserSchema = z.object({
   id: z.uuid(),
@@ -75,7 +77,7 @@ export const verifyEmailSchema = z.strictObject({
   token: z.string().min(1, 'token_required'),
 });
 
-export type VerifyEmailRequest = z.infer<typeof verifyEmailSchema>;
+export type VerifyEmailDto = z.infer<typeof verifyEmailSchema>;
 
 export const verifyEmailResponseSchema = z.object({
   email: email,

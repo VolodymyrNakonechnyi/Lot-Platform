@@ -7,7 +7,14 @@ import {
   Post,
   UnauthorizedException,
 } from '@nestjs/common';
-import type { PublicUser, SignInResponse } from '@app/contracts';
+import {
+  loginSchema,
+  registerSchema,
+  type LoginDto,
+  type PublicUser,
+  type RegisterDto,
+  type SignInResponse,
+} from '@app/contracts';
 import {
   CurrentUser,
   EmailVerificationService,
@@ -15,12 +22,7 @@ import {
   SignInService,
 } from '@nestjs/authentication';
 import { ZodSerializerDto } from 'nestjs-zod';
-import {
-  CreateUserDto,
-  LoginUserDto,
-  PublicUserDto,
-  SignInResponseDto,
-} from './dto/user.dto';
+import { PublicUserDto, SignInResponseDto } from './dto/user.dto';
 import { CredentialsService } from './credentials.service';
 
 @Controller('auth')
@@ -34,11 +36,13 @@ export class AuthController {
   @Post('sign-up')
   @Public()
   @ZodSerializerDto(SignInResponseDto)
-  async register(@Body() dto: CreateUserDto): Promise<SignInResponse> {
+  async register(
+    @Body({ schema: registerSchema }) body: RegisterDto,
+  ): Promise<SignInResponse> {
     const user = await this.createntialsService.register(
-      dto.email,
-      dto.name,
-      dto.password,
+      body.email,
+      body.name,
+      body.password,
     );
 
     const { session } = await this.signInService.signIn(user.id, {
@@ -54,8 +58,13 @@ export class AuthController {
   @Public()
   @HttpCode(HttpStatus.OK)
   @ZodSerializerDto(SignInResponseDto)
-  async login(@Body() dto: LoginUserDto): Promise<SignInResponse> {
-    const user = await this.createntialsService.verify(dto.email, dto.password);
+  async login(
+    @Body({ schema: loginSchema }) body: LoginDto,
+  ): Promise<SignInResponse> {
+    const user = await this.createntialsService.verify(
+      body.email,
+      body.password,
+    );
 
     if (!user) {
       throw new UnauthorizedException('Invalid email or password');

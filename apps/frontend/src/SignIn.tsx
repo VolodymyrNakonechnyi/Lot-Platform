@@ -12,10 +12,7 @@ const API_URL = 'http://localhost:3000';
 const MESSAGES: Record<string, string> = {
   invalid_email: 'Enter a valid email address.',
   email_too_long: 'That email address is too long.',
-  password_too_short: 'The password needs at least 8 characters.',
-  password_too_long: 'The password may hold at most 128 characters.',
-  password_needs_letter: 'The password needs a letter.',
-  password_needs_digit: 'The password needs a digit.',
+  password_required: 'Enter your password.',
 };
 
 async function failure(response: Response): Promise<Error> {

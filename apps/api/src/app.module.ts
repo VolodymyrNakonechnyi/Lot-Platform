@@ -1,11 +1,11 @@
 import { BullModule } from '@nestjs/bullmq';
-import { Module } from '@nestjs/common';
+import { Module, StandardSchemaValidationPipe } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DbModule } from './db/db.module';
 import { UserModule } from './user/user.module';
 import { APP_INTERCEPTOR, APP_PIPE, APP_FILTER } from '@nestjs/core';
-import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
+import { ZodSerializerInterceptor } from 'nestjs-zod';
 import { HttpExceptionFilter } from './common/http-exception.filter';
 import { AuthModule } from './auth/auth.module';
 import { AuthenticationModule } from '@nestjs/authentication';
@@ -89,7 +89,7 @@ import { join } from 'node:path';
     AppService,
     {
       provide: APP_PIPE,
-      useClass: ZodValidationPipe,
+      useClass: StandardSchemaValidationPipe,
     },
     {
       provide: APP_INTERCEPTOR,

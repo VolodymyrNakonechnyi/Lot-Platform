@@ -12,4 +12,4 @@ export const refreshTokenSchema = z.strictObject({
   refreshToken: z.string().min(1, 'refresh_token_required'),
 });
 
-export type RefreshTokenRequest = z.infer<typeof refreshTokenSchema>;
+export type RefreshTokenDto = z.infer<typeof refreshTokenSchema>;
