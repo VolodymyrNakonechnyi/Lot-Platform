@@ -8,11 +8,7 @@ import {
 import { PasswordResetService, Public } from '@nestjs/authentication';
 import { ZodSerializerDto } from 'nestjs-zod';
 import type { SignInResponse } from '@app/contracts';
-import {
-  ForgotPasswordDto,
-  ResetPasswordDto,
-  SignInResponseDto,
-} from './dto/user.dto';
+import { EmailDto, ResetPasswordDto, SignInResponseDto } from './dto/user.dto';
 
 @Public()
 @Controller('auth/password')
@@ -23,7 +19,7 @@ export class PasswordResetController {
   // request() returns before it looks the address up.
   @Post('forgot')
   @HttpCode(202)
-  forgot(@Body() body: ForgotPasswordDto) {
+  forgot(@Body() body: EmailDto) {
     this.passwordResetService.request(body.email);
   }
 

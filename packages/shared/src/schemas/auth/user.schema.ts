@@ -2,48 +2,48 @@ import { z } from 'zod';
 import { ROLES } from '../../enums.js';
 import { normalizeEmail } from '../../normalize.js';
 
-export const emailSchema = z
+export const email = z
   .string()
   .trim()
   .pipe(z.email({ message: 'invalid_email' }).max(254, 'email_too_long'))
   .transform(normalizeEmail);
 
-export const nameSchema = z
+export const name = z
   .string()
   .trim()
   .overwrite((v) => v.replace(/\s+/g, ' '))
   .min(1, 'name_required')
   .max(100);
 
-const passwordSchema = z
+const password = z
   .string()
   .min(8, 'password_too_short')
   .max(128, 'password_too_long')
   .regex(/[a-zA-Z]/, { message: 'password_needs_letter' })
   .regex(/[0-9]/, { message: 'password_needs_digit' });
 
-export const forgotPasswordSchema = z.strictObject({
-  email: emailSchema,
+export const emailSchema = z.strictObject({
+  email: email,
 });
 
-export type ForgotPassword = z.infer<typeof forgotPasswordSchema>;
+export type EmailSchema = z.infer<typeof emailSchema>;
 
 export const resetPasswordSchema = z.strictObject({
   token: z.string().min(1, 'token_required'),
-  password: passwordSchema,
+  password: email,
 });
 
 export type ResetPassword = z.infer<typeof resetPasswordSchema>;
 
 export const loginSchema = z.strictObject({
-  email: emailSchema,
-  password: passwordSchema,
+  email: email,
+  password: password,
 });
 
 export const registerSchema = z.strictObject({
-  email: emailSchema,
-  password: passwordSchema,
-  name: nameSchema,
+  email: email,
+  password: password,
+  name: name,
 });
 
 export type RegisterRequest = z.infer<typeof registerSchema>;
@@ -53,7 +53,7 @@ export const publicUserSchema = z.object({
   username: z.string(),
   avatarUrl: z.string().nullable(),
   role: z.enum(ROLES),
-  email: emailSchema,
+  email: email,
   confirmedEmail: z.boolean(),
   name: z.string(),
   phoneNumber: z.string().nullable(),
@@ -78,7 +78,7 @@ export const verifyEmailSchema = z.strictObject({
 export type VerifyEmailRequest = z.infer<typeof verifyEmailSchema>;
 
 export const verifyEmailResponseSchema = z.object({
-  email: emailSchema,
+  email: email,
   emailVerified: z.boolean(),
 });
 

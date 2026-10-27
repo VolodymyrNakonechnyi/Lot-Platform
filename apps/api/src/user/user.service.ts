@@ -58,4 +58,17 @@ export class UserService {
 
     return updated !== undefined;
   }
+
+  async updateEmail(
+    userId: string,
+    email: string,
+  ): Promise<Pick<User, 'id' | 'email'> | null> {
+    const [user] = await this.db
+      .update(users)
+      .set({ email: email })
+      .where(eq(users.id, userId))
+      .returning({ id: users.id, email: users.email });
+
+    return user;
+  }
 }
