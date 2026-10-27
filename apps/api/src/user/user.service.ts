@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { and, eq, sql } from 'drizzle-orm';
 import { normalizeEmail } from '@app/contracts';
 import { DRIZZLE, type Database } from '../db/db.module';
-import { users, type NewUser, type User } from '../db/schema';
+import { userIdentities, users, type NewUser, type User } from '../db/schema';
 
 const sameEmail = (email: string) =>
   sql`lower(${users.email}) = ${normalizeEmail(email)}`;
@@ -15,12 +15,12 @@ export class UserService {
     return this.db.select().from(users);
   }
 
-  async findById(id: string): Promise<User | undefined> {
+  async findById(id: string): Promise<User | null> {
     const [user] = await this.db.select().from(users).where(eq(users.id, id));
     return user;
   }
 
-  async findByEmail(email: string): Promise<User | undefined> {
+  async findByEmail(email: string): Promise<User | null> {
     const [user] = await this.db.select().from(users).where(sameEmail(email));
     return user;
   }
@@ -70,5 +70,35 @@ export class UserService {
       .returning({ id: users.id, email: users.email });
 
     return user;
+  }
+
+  async findByIdentity(
+    provider: string,
+    subject: string,
+  ): Promise<User | null> {
+    const [{ user }] = await this.db
+      .select({ user: users })
+      .from(users)
+      .innerJoin(userIdentities, eq(users.id, userIdentities.userId))
+      .where(
+        and(
+          eq(userIdentities.provider, provider),
+          eq(userIdentities.subject, subject),
+        ),
+      );
+
+    return user ? user : null;
+  }
+
+  async linkIdentity(
+    id: string,
+    provider: string,
+    subject: string,
+  ): Promise<User | null> {
+    await this.db
+      .insert(userIdentities)
+      .values({ provider, subject, userId: id });
+
+    return this.findById(id);
   }
 }

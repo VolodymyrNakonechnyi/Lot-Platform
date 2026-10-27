@@ -8,7 +8,7 @@ import { APP_INTERCEPTOR, APP_PIPE, APP_FILTER } from '@nestjs/core';
 import { ZodSerializerInterceptor } from 'nestjs-zod';
 import { HttpExceptionFilter } from './common/http-exception.filter';
 import { AuthModule } from './auth/auth.module';
-import { AuthenticationModule } from '@nestjs/authentication';
+import { AuthenticationModule, google } from '@nestjs/authentication';
 import './auth/authentication.types';
 import {
   FileTemplateEngine,
@@ -83,6 +83,16 @@ import { join } from 'node:path';
         mfa: {
           encryption: { keys: [process.env.TOTP_ENCRYPTION_KEY!] },
           issuer: 'Example',
+        },
+        oidc: {
+          // The callback route of OidcController, registered with Google.
+          callbackUrl: `${process.env.APP_URL}/auth/oidc/:provider/callback`,
+          providers: {
+            google: google({
+              clientId: process.env.GOOGLE_CLIENT_ID!,
+              clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+            }),
+          },
         },
       }),
     }),
