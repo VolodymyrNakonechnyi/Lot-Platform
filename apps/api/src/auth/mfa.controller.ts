@@ -7,10 +7,14 @@ import {
 } from '@nestjs/common';
 import {
   Authenticate,
+  CurrentSession,
   CurrentUser,
   MfaService,
   Public,
+  type SessionRecord,
+  SessionService,
   SignInService,
+  TokenService,
 } from '@nestjs/authentication';
 import {
   mfaConfirmSchema,
@@ -25,6 +29,8 @@ export class MfaController {
   constructor(
     private readonly mfaService: MfaService,
     private readonly signInService: SignInService,
+    private readonly tokenService: TokenService,
+    private readonly sessionService: SessionService,
   ) {}
 
   // Returns the otpauth:// URI for the web app to show as a QR code,
@@ -70,5 +76,24 @@ export class MfaController {
       throw new UnauthorizedException('Invalid code');
     }
     return { mfa: issued.session.mfa };
+  }
+
+  // Takes a verified session and a fresh code: a session left signed in on a
+  // shared computer isn't enough.
+  @Authenticate({ mfa: true })
+  @Post('disable')
+  @HttpCode(204)
+  async disable(
+    @CurrentUser('id') userId: string,
+    @CurrentSession() current: SessionRecord,
+    @Body('code') code: string,
+  ) {
+    if (!(await this.mfaService.verifyTotp(userId, code))) {
+      throw new UnauthorizedException('Invalid code');
+    }
+    await this.mfaService.disable(userId);
+    // The other sessions and refresh tokens passed the second factor, and still would.
+    await this.sessionService.revokeAll(userId, { except: current.id });
+    await this.tokenService.revokeAll(userId);
   }
 }
