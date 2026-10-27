@@ -22,6 +22,13 @@
       "when": 1792403133107,
       "tag": "0002_authentication",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793139791800,
+      "tag": "0003_eager_rawhide_kid",
+      "breakpoints": true
     }
   ]
 }

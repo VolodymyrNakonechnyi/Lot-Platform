@@ -66,6 +66,27 @@ export const users = pgTable(
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 
+export const userIdentities = pgTable(
+  'user_identities',
+  {
+    provider: text('provider').notNull(), // 'google', 'github'
+    subject: text('subject').notNull(), // stable account provicer id
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.provider, t.subject] }), // composable key
+    index('user_identities_user_id_idx').on(t.userId),
+  ],
+);
+
+export type UserIdentities = typeof userIdentities.$inferSelect;
+export type NewUserIdentities = typeof userIdentities.$inferInsert;
+
 export const sessions = pgTable(
   'sessions',
   {
