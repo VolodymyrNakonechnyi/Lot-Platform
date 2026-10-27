@@ -16,6 +16,7 @@ import {
   SignInService,
   TokenService,
 } from '@nestjs/authentication';
+import { Throttle } from '@nestjs/throttler';
 import {
   mfaConfirmSchema,
   mfaVerifySchema,
@@ -81,14 +82,15 @@ export class MfaController {
   // Takes a verified session and a fresh code: a session left signed in on a
   // shared computer isn't enough.
   @Authenticate({ mfa: true })
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('disable')
   @HttpCode(204)
   async disable(
     @CurrentUser('id') userId: string,
     @CurrentSession() current: SessionRecord,
-    @Body('code') code: string,
+    @Body({ schema: mfaConfirmSchema }) body: MfaConfirmDto,
   ) {
-    if (!(await this.mfaService.verifyTotp(userId, code))) {
+    if (!(await this.mfaService.verifyTotp(userId, body.code))) {
       throw new UnauthorizedException('Invalid code');
     }
     await this.mfaService.disable(userId);
