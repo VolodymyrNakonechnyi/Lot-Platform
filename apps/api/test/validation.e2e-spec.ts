@@ -184,6 +184,73 @@ describe('Request validation (e2e)', () => {
       expect(issues(res.body)).toHaveLength(2);
       expect(tokens.issue).not.toHaveBeenCalled();
     });
+
+    it('passes a TOTP code on as the second factor', async () => {
+      const res = await request(app.getHttpServer()).post('/auth/token').send({
+        email: 'user@example.com',
+        password: 'longenough1',
+        code: ' 12 34 56 ',
+      });
+
+      expect(res.status).toBe(200);
+      expect(tokens.issue).toHaveBeenCalledWith('u1', {
+        method: 'password',
+        claims: { amr: ['pwd'] },
+        secondFactor: { code: '123456', recoveryCode: undefined },
+      });
+    });
+
+    it('passes a recovery code on as the second factor', async () => {
+      const res = await request(app.getHttpServer()).post('/auth/token').send({
+        email: 'user@example.com',
+        password: 'longenough1',
+        recoveryCode: 'paper-code',
+      });
+
+      expect(res.status).toBe(200);
+      expect(tokens.issue).toHaveBeenCalledWith('u1', {
+        method: 'password',
+        claims: { amr: ['pwd'] },
+        secondFactor: { code: undefined, recoveryCode: 'paper-code' },
+      });
+    });
+
+    it('issues tokens without a code, so the app can learn it needs one', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/auth/token')
+        .send({ email: 'user@example.com', password: 'longenough1' });
+
+      expect(res.status).toBe(200);
+      expect(tokens.issue).toHaveBeenCalledWith('u1', {
+        method: 'password',
+        claims: { amr: ['pwd'] },
+        secondFactor: { code: undefined, recoveryCode: undefined },
+      });
+    });
+
+    it('rejects a code that is not six digits', async () => {
+      const res = await request(app.getHttpServer()).post('/auth/token').send({
+        email: 'user@example.com',
+        password: 'longenough1',
+        code: '1234',
+      });
+
+      expect(res.status).toBe(400);
+      expect(issues(res.body)).toEqual(['code: invalid_code']);
+      expect(tokens.issue).not.toHaveBeenCalled();
+    });
+
+    it('stays strict about keys after extending the sign-in schema', async () => {
+      const res = await request(app.getHttpServer()).post('/auth/token').send({
+        email: 'user@example.com',
+        password: 'longenough1',
+        totp: '123456',
+      });
+
+      expect(res.status).toBe(400);
+      expect(issues(res.body)[0]).toMatch(/Unrecognized key/);
+      expect(tokens.issue).not.toHaveBeenCalled();
+    });
   });
 
   describe('POST /auth/token/refresh', () => {

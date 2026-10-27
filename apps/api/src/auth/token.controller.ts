@@ -7,10 +7,10 @@ import {
 } from '@nestjs/common';
 import { Public, TokenService } from '@nestjs/authentication';
 import {
-  loginSchema,
   refreshTokenSchema,
-  type LoginDto,
+  tokenRequestSchema,
   type RefreshTokenDto,
+  type TokenRequestDto,
 } from '@app/contracts';
 import { CredentialsService } from './credentials.service';
 
@@ -24,7 +24,7 @@ export class TokensController {
 
   @Post()
   @HttpCode(200)
-  async issue(@Body({ schema: loginSchema }) body: LoginDto) {
+  async issue(@Body({ schema: tokenRequestSchema }) body: TokenRequestDto) {
     const user = await this.credentialsService.verify(
       body.email,
       body.password,
@@ -36,6 +36,8 @@ export class TokensController {
       method: 'password',
       // `amr` goes into this access token and into every refreshed one.
       claims: { amr: ['pwd'] },
+      // Checked only for customers with an authenticator.
+      secondFactor: { code: body.code, recoveryCode: body.recoveryCode },
     });
   }
 

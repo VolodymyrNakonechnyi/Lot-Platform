@@ -10,6 +10,7 @@ import { EmailVerificationController } from './email-verification.controller';
 import { PasswordResetMailer } from './password-reset.mailer';
 import { PasswordResetController } from './password-reset.controller';
 import { TokensController } from './token.controller';
+import { MfaController } from './mfa.controller';
 
 @Module({
   imports: [UserModule],
@@ -26,6 +27,7 @@ import { TokensController } from './token.controller';
     EmailVerificationController,
     PasswordResetController,
     TokensController,
+    MfaController,
   ],
 })
 export class AuthModule {}

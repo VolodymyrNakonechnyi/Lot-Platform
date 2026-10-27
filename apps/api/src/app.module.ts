@@ -80,6 +80,10 @@ import { join } from 'node:path';
           audience: 'mobile-app',
           ttl: '15m',
         },
+        mfa: {
+          encryption: { keys: [process.env.TOTP_ENCRYPTION_KEY!] },
+          issuer: 'Example',
+        },
       }),
     }),
     AuthModule,
