@@ -52,12 +52,12 @@ export type RegisterDto = z.infer<typeof registerSchema>;
 
 export const publicUserSchema = z.object({
   id: z.uuid(),
-  username: z.string(),
+  username: z.string().nullable(),
   avatarUrl: z.string().nullable(),
   role: z.enum(ROLES),
   email: email,
   confirmedEmail: z.boolean(),
-  name: z.string(),
+  name: z.string().nullable(),
   phoneNumber: z.string().nullable(),
   confirmedPhoneNumber: z.boolean(),
   updatedAt: z.coerce.date(),

@@ -36,13 +36,13 @@ export const users = pgTable(
     id: uuid('id')
       .primaryKey()
       .default(sql`uuidv7()`),
-    username: text('username').notNull().unique(),
+    username: text('username').unique(),
     avatarUrl: text('avatar_url'),
     role: text('role', { enum: ROLES }).notNull().default(ROLE.USER),
-    password: text().notNull(),
+    password: text(),
     email: text('email').notNull(),
     confirmedEmail: boolean('confirmed_email').notNull().default(false),
-    name: text('name').notNull(),
+    name: text('name'),
     phoneNumber: text('phone_number').unique(),
     confirmedPhoneNumber: boolean('confirmed_phone_number')
       .notNull()
