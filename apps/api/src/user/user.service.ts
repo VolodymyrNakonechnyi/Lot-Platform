@@ -76,7 +76,7 @@ export class UserService {
     provider: string,
     subject: string,
   ): Promise<User | null> {
-    const [{ user }] = await this.db
+    const [row] = await this.db
       .select({ user: users })
       .from(users)
       .innerJoin(userIdentities, eq(users.id, userIdentities.userId))
@@ -87,7 +87,7 @@ export class UserService {
         ),
       );
 
-    return user ? user : null;
+    return row ? row.user : null;
   }
 
   async linkIdentity(

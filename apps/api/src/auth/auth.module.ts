@@ -11,6 +11,8 @@ import { PasswordResetMailer } from './password-reset.mailer';
 import { PasswordResetController } from './password-reset.controller';
 import { TokensController } from './token.controller';
 import { MfaController } from './mfa.controller';
+import { AccountLinker } from './account-linker';
+import { OidcController } from './oidc.controller';
 
 @Module({
   imports: [UserModule],
@@ -21,6 +23,8 @@ import { MfaController } from './mfa.controller';
     DrizzleSessionStore,
     EmailVerificationMailer,
     PasswordResetMailer,
+    PasswordResetMailer,
+    AccountLinker,
   ],
   controllers: [
     AuthController,
@@ -28,6 +32,9 @@ import { MfaController } from './mfa.controller';
     PasswordResetController,
     TokensController,
     MfaController,
+
+    MfaController,
+    OidcController,
   ],
 })
 export class AuthModule {}
