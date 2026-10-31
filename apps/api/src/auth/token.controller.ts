@@ -13,6 +13,7 @@ import {
   type TokenRequestDto,
 } from '@app/contracts';
 import { CredentialsService } from './credentials.service';
+import { minutes, Throttle } from '@nestjs/throttler';
 
 @Public()
 @Controller('auth/token')
@@ -22,6 +23,10 @@ export class TokensController {
     private readonly tokenService: TokenService,
   ) {}
 
+  @Throttle({
+    default: { limit: 30, ttl: minutes(15) },
+    account: { limit: 5, ttl: minutes(15) },
+  })
   @Post()
   @HttpCode(200)
   async issue(@Body({ schema: tokenRequestSchema }) body: TokenRequestDto) {

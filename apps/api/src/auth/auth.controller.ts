@@ -24,6 +24,7 @@ import {
 import { ZodSerializerDto } from 'nestjs-zod';
 import { PublicUserDto, SignInResponseDto } from './dto/user.dto';
 import { CredentialsService } from './credentials.service';
+import { hours, minutes, SkipThrottle, Throttle } from '@nestjs/throttler';
 
 @Controller('auth')
 export class AuthController {
@@ -33,6 +34,8 @@ export class AuthController {
     private readonly signInService: SignInService,
   ) {}
 
+  @SkipThrottle({ account: true })
+  @Throttle({ default: { limit: 10, ttl: hours(1) } })
   @Post('sign-up')
   @Public()
   @ZodSerializerDto(SignInResponseDto)
@@ -54,6 +57,10 @@ export class AuthController {
     return { mfaRequired: session.mfa === 'pending' };
   }
 
+  @Throttle({
+    default: { limit: 30, ttl: minutes(15) },
+    account: { limit: 5, ttl: minutes(15) },
+  })
   @Post('sign-in')
   @Public()
   @HttpCode(HttpStatus.OK)

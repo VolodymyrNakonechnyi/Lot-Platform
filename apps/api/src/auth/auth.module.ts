@@ -14,6 +14,8 @@ import { MfaController } from './mfa.controller';
 import { AccountLinker } from './account-linker';
 import { OidcController } from './oidc.controller';
 import { MagicLinkController } from './magic-link.controller';
+import { MagicLinkMailer } from './magic-link.mailer';
+import { SessionsController } from './sessions.controller';
 
 @Module({
   imports: [UserModule],
@@ -24,7 +26,7 @@ import { MagicLinkController } from './magic-link.controller';
     DrizzleSessionStore,
     EmailVerificationMailer,
     PasswordResetMailer,
-    PasswordResetMailer,
+    MagicLinkMailer,
     AccountLinker,
   ],
   controllers: [
@@ -34,7 +36,7 @@ import { MagicLinkController } from './magic-link.controller';
     TokensController,
     MfaController,
     MagicLinkController,
-    MfaController,
+    SessionsController,
     OidcController,
   ],
 })

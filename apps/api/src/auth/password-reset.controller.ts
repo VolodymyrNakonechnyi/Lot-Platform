@@ -15,6 +15,8 @@ import {
   type SignInResponse,
 } from '@app/contracts';
 import { SignInResponseDto } from './dto/user.dto';
+import { minutes, Throttle } from '@nestjs/throttler';
+import { accountEmail } from './account-email';
 
 @Public()
 @Controller('auth/password')
@@ -23,6 +25,10 @@ export class PasswordResetController {
 
   // The same answer, as fast, whether or not the address has an account:
   // request() returns before it looks the address up.
+  @Throttle({
+    default: { limit: 10, ttl: minutes(15) },
+    account: { limit: 3, ttl: minutes(15), getTracker: accountEmail },
+  })
   @Post('forgot')
   @HttpCode(202)
   forgot(@Body({ schema: emailSchema }) body: EmailDto) {

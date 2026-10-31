@@ -7,12 +7,17 @@ import {
 } from '@nestjs/common';
 import { MagicLinkService, Public } from '@nestjs/authentication';
 import { emailSchema, type EmailDto } from '@app/contracts';
+import { minutes, Throttle } from '@nestjs/throttler';
 
 @Public()
 @Controller('auth/magic-link')
 export class MagicLinkController {
   constructor(private readonly magicLinkService: MagicLinkService) {}
 
+  @Throttle({
+    default: { limit: 10, ttl: minutes(15) },
+    account: { limit: 3, ttl: minutes(15) },
+  })
   @Post()
   @HttpCode(202)
   async request(

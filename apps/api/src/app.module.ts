@@ -4,7 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DbModule } from './db/db.module';
 import { UserModule } from './user/user.module';
-import { APP_INTERCEPTOR, APP_PIPE, APP_FILTER } from '@nestjs/core';
+import { APP_INTERCEPTOR, APP_PIPE, APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ZodSerializerInterceptor } from 'nestjs-zod';
 import { HttpExceptionFilter } from './common/http-exception.filter';
 import { AuthModule } from './auth/auth.module';
@@ -17,11 +17,25 @@ import {
   SmtpTransport,
 } from '@nestjs/mail';
 import { join } from 'node:path';
+import { ThrottlerGuard, ThrottlerModule, minutes } from '@nestjs/throttler';
+import { accountEmailAndIp, skipWithoutAccount } from './auth/account-email';
 
 @Module({
   imports: [
     DbModule,
     UserModule,
+    ThrottlerModule.forRoot({
+      throttlers: [
+        { name: 'default', limit: 300, ttl: minutes(1) },
+        {
+          name: 'account',
+          limit: 5,
+          ttl: minutes(15),
+          getTracker: accountEmailAndIp,
+          skipIf: skipWithoutAccount,
+        },
+      ],
+    }),
     BullModule.forRootAsync({
       useFactory: () => ({
         connection: {
@@ -72,6 +86,7 @@ import { join } from 'node:path';
         },
         emailVerification: { url: `${process.env.WEB_ORIGIN}/verify-email` },
         passwordReset: { url: `${process.env.WEB_ORIGIN}/reset-password` },
+        magicLink: { url: `${process.env.WEB_ORIGIN}/sign-in/magic` },
         accessToken: {
           key: process.env.JWT_PRIVATE_KEY!, // PEM private key P-256
           alg: 'ES256',
@@ -101,6 +116,10 @@ import { join } from 'node:path';
   controllers: [AppController],
   providers: [
     AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
     {
       provide: APP_PIPE,
       useClass: StandardSchemaValidationPipe,
