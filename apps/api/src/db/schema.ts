@@ -109,6 +109,122 @@ export const sessions = pgTable(
 export type Session = typeof sessions.$inferSelect;
 export type NewSession = typeof sessions.$inferInsert;
 
+export const refreshTokens = pgTable(
+  'refresh_tokens',
+  {
+    id: text('id').primaryKey(),
+    familyId: text('family_id').notNull(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    familyExpiresAt: timestamp('family_expires_at', {
+      withTimezone: true,
+    }).notNull(),
+    usedAt: timestamp('used_at', { withTimezone: true }),
+    revoked: boolean('revoked').notNull().default(false),
+    claims: jsonb('claims').$type<Record<string, unknown>>(),
+  },
+  (table) => [
+    index('refresh_tokens_family_id_idx').on(table.familyId),
+    index('refresh_tokens_user_id_idx').on(table.userId),
+    index('refresh_tokens_family_expires_at_idx').on(table.familyExpiresAt),
+  ],
+);
+
+export type RefreshToken = typeof refreshTokens.$inferSelect;
+
+export const mfaAuthenticators = pgTable('mfa_authenticators', {
+  userId: uuid('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  secret: text('secret').notNull(),
+  confirmed: boolean('confirmed').notNull(),
+  pendingSecret: text('pending_secret'),
+  lastUsedStep: integer('last_used_step'),
+});
+
+export const mfaRecoveryCodes = pgTable(
+  'mfa_recovery_codes',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    codeHash: text('code_hash').notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.codeHash] })],
+);
+
+export const mfaFailures = pgTable(
+  'mfa_failures',
+  {
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    failedAt: timestamp('failed_at', { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    index('mfa_failures_user_id_failed_at_idx').on(
+      table.userId,
+      table.failedAt,
+    ),
+    index('mfa_failures_failed_at_idx').on(table.failedAt),
+  ],
+);
+
+export const magicLinks = pgTable(
+  'magic_links',
+  {
+    id: text('id').primaryKey(),
+    email: text('email').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    redirectTo: text('redirect_to'),
+  },
+  (table) => [index('magic_links_expires_at_idx').on(table.expiresAt)],
+);
+
+export const oidcLogins = pgTable(
+  'oidc_logins',
+  {
+    state: text('state').primaryKey(),
+    provider: text('provider').notNull(),
+    codeVerifier: text('code_verifier').notNull(),
+    nonce: text('nonce'),
+    redirectTo: text('redirect_to'),
+    linkUserId: uuid('link_user_id').references(() => users.id, {
+      onDelete: 'cascade',
+    }),
+    linkSessionId: text('link_session_id'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  },
+  (table) => [index('oidc_logins_expires_at_idx').on(table.expiresAt)],
+);
+
+export const emailTokens = pgTable(
+  'email_tokens',
+  {
+    id: text('id').primaryKey(),
+    purpose: text('purpose', {
+      enum: ['password-reset', 'email-verification'],
+    }).notNull(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    email: text('email').notNull(),
+    fingerprint: text('fingerprint'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    index('email_tokens_user_id_purpose_idx').on(table.userId, table.purpose),
+    index('email_tokens_expires_at_idx').on(table.expiresAt),
+  ],
+);
+
 export const categories = pgTable(
   'categories',
   {

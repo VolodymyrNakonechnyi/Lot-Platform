@@ -36,6 +36,13 @@
       "when": 1793184607088,
       "tag": "0004_silent_felicia_hardy",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793487005800,
+      "tag": "0005_authentication_store",
+      "breakpoints": true
     }
   ]
 }
