@@ -3,7 +3,7 @@ import { AuthController } from './auth.controller';
 import { UserModule } from 'src/user/user.module';
 import { SessionAuth } from './providers/session-auth.provider';
 import { JwtAuth } from './providers/jwt-auth.provider';
-import { DrizzleSessionStore } from './stores/drizzle-session.store';
+import { DrizzleAuthenticationStore } from './stores/drizzle-authentication.store';
 import { CredentialsService } from './credentials.service';
 import { EmailVerificationMailer } from './email-verification.mailer';
 import { EmailVerificationController } from './email-verification.controller';
@@ -23,7 +23,7 @@ import { SessionsController } from './sessions.controller';
     CredentialsService,
     SessionAuth,
     JwtAuth,
-    DrizzleSessionStore,
+    DrizzleAuthenticationStore,
     EmailVerificationMailer,
     PasswordResetMailer,
     MagicLinkMailer,

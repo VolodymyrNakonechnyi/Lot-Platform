@@ -3,11 +3,12 @@ import { existsSync } from 'node:fs';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
   if (existsSync('.env')) process.loadEnvFile('.env');
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   const openApiDoc = SwaggerModule.createDocument(
     app,
@@ -21,9 +22,11 @@ async function bootstrap() {
   SwaggerModule.setup('docs', app, cleanupOpenApiDoc(openApiDoc));
   app.enableShutdownHooks();
   app.enableCors({ origin: process.env.WEB_ORIGIN ?? true, credentials: true });
+  app.set('trust proxy', 'loopback');
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
+
   console.log(`API:     http://localhost:${port}`);
   console.log(`Swagger: http://localhost:${port}/docs`);
 }
