@@ -13,6 +13,7 @@ import { TokensController } from './token.controller';
 import { MfaController } from './mfa.controller';
 import { AccountLinker } from './account-linker';
 import { OidcController } from './oidc.controller';
+import { MagicLinkController } from './magic-link.controller';
 
 @Module({
   imports: [UserModule],
@@ -32,7 +33,7 @@ import { OidcController } from './oidc.controller';
     PasswordResetController,
     TokensController,
     MfaController,
-
+    MagicLinkController,
     MfaController,
     OidcController,
   ],
