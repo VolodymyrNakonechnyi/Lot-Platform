@@ -50,19 +50,6 @@ import { QueueModule } from './queue/queue.module';
         },
       }),
     }),
-    BullModule.forRootAsync('alternative-config', {
-      useFactory: () => ({
-        connection: {
-          host: process.env.REDIS_HOST ?? 'localhost',
-          port: Number(process.env.REDIS_PORT ?? 6379),
-        },
-        prefix: '{alt}',
-      }),
-    }),
-    BullModule.registerQueue({
-      configKey: 'alternative-config',
-      name: 'video',
-    }),
     MailModule.forRootAsync({
       useFactory: () => ({
         // Your provider in production. In development, each email (links
