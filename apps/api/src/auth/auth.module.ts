@@ -16,9 +16,20 @@ import { OidcController } from './oidc.controller';
 import { MagicLinkController } from './magic-link.controller';
 import { MagicLinkMailer } from './magic-link.mailer';
 import { SessionsController } from './sessions.controller';
+import { BullModule } from '@nestjs/bullmq';
+import { BullBoardModule } from '@bull-board/nestjs';
+import { QUEUE_NAMES } from 'src/common/consts';
+import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 
 @Module({
-  imports: [UserModule],
+  imports: [
+    UserModule,
+    BullModule.registerQueue({ name: QUEUE_NAMES.AUTH }),
+    BullBoardModule.forFeature({
+      name: QUEUE_NAMES.AUTH,
+      adapter: BullMQAdapter,
+    }),
+  ],
   providers: [
     CredentialsService,
     SessionAuth,

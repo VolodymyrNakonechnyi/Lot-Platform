@@ -19,9 +19,15 @@ import {
 import { join } from 'node:path';
 import { ThrottlerGuard, ThrottlerModule, minutes } from '@nestjs/throttler';
 import { accountEmailAndIp, skipWithoutAccount } from './auth/account-email';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { QueueModule } from './queue/queue.module';
 
 @Module({
   imports: [
+    EventEmitterModule.forRoot({
+      wildcard: false,
+      delimiter: '.',
+    }),
     DbModule,
     UserModule,
     ThrottlerModule.forRoot({
@@ -112,6 +118,7 @@ import { accountEmailAndIp, skipWithoutAccount } from './auth/account-email';
       }),
     }),
     AuthModule,
+    QueueModule,
   ],
   controllers: [AppController],
   providers: [
