@@ -4,13 +4,16 @@ import {
   EmailVerificationHandler,
   type EmailVerificationLink,
 } from '@nestjs/authentication';
-import { Mailer, type Mailable } from '@nestjs/mail';
+import type { Mailable } from '@nestjs/mail';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UserService } from '../user/user.service';
+import { EmailVerificationRequestedEvent } from './auth.events';
+import type { EmailLinkEvent } from '../common/events';
 import type { User } from '../db/schema';
 
 @Injectable()
-export class VerifyEmailMail implements Mailable<EmailVerificationLink> {
-  render({ url }: EmailVerificationLink) {
+export class VerifyEmailMail implements Mailable<EmailLinkEvent> {
+  render({ url }: EmailLinkEvent) {
     return {
       subject: 'Confirm your email address',
       template: 'verify-email',
@@ -23,7 +26,7 @@ export class VerifyEmailMail implements Mailable<EmailVerificationLink> {
 export class EmailVerificationMailer extends EmailVerificationHandler {
   constructor(
     private readonly userService: UserService,
-    private readonly mailer: Mailer,
+    private readonly events: EventEmitter2,
     registry: AuthenticationRegistry,
   ) {
     super();
@@ -32,7 +35,10 @@ export class EmailVerificationMailer extends EmailVerificationHandler {
 
   async send(link: EmailVerificationLink) {
     const to = process.env.MAIL_REDIRECT_TO ?? link.email;
-    await this.mailer.send(VerifyEmailMail, { to, data: link });
+    await this.events.emitAsync(
+      EmailVerificationRequestedEvent.eventName,
+      new EmailVerificationRequestedEvent(to, link.url),
+    );
   }
 
   markVerified(userId: string, email: string) {

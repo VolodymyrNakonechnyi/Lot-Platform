@@ -1,15 +1,20 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { and, eq, sql } from 'drizzle-orm';
 import { normalizeEmail } from '@app/contracts';
 import { DRIZZLE, type Database } from '../db/db.module';
 import { userIdentities, users, type NewUser, type User } from '../db/schema';
+import { UserCreatedEvent } from './user.events';
 
 const sameEmail = (email: string) =>
   sql`lower(${users.email}) = ${normalizeEmail(email)}`;
 
 @Injectable()
 export class UserService {
-  constructor(@Inject(DRIZZLE) private readonly db: Database) {}
+  constructor(
+    @Inject(DRIZZLE) private readonly db: Database,
+    private readonly events: EventEmitter2,
+  ) {}
 
   findAll(): Promise<User[]> {
     return this.db.select().from(users);
@@ -30,6 +35,12 @@ export class UserService {
       .insert(users)
       .values({ ...data, email: normalizeEmail(data.email) })
       .returning();
+
+    await this.events.emitAsync(
+      UserCreatedEvent.eventName,
+      new UserCreatedEvent(user.id, user.email),
+    );
+
     return user;
   }
 

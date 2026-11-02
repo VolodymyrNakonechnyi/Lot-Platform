@@ -20,6 +20,9 @@ import { BullModule } from '@nestjs/bullmq';
 import { BullBoardModule } from '@bull-board/nestjs';
 import { QUEUE_NAMES } from 'src/common/consts';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
+import { AuthQueueProducer } from './auth-queue.producer';
+import { AuthProcessor } from './auth.processor';
+import { AuthListener } from './listeners/auth.listener';
 
 @Module({
   imports: [
@@ -39,6 +42,9 @@ import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
     PasswordResetMailer,
     MagicLinkMailer,
     AccountLinker,
+    AuthQueueProducer,
+    AuthProcessor,
+    AuthListener,
   ],
   controllers: [
     AuthController,
