@@ -5,22 +5,9 @@ import {
   type PasswordResetAccount,
   type PasswordResetLink,
 } from '@nestjs/authentication';
-import type { Mailable } from '@nestjs/mail';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UserService } from 'src/user/user.service';
-import { PasswordResetRequestedEvent } from './auth.events';
-import type { EmailLinkEvent } from 'src/common/events';
-
-@Injectable()
-export class PasswordResetMail implements Mailable<EmailLinkEvent> {
-  render({ url }: EmailLinkEvent) {
-    return {
-      subject: 'Reset your password',
-      template: 'password-reset',
-      context: { url },
-    };
-  }
-}
+import { PasswordResetRequestedEvent } from '../queue/auth.events';
 
 @Injectable()
 export class PasswordResetMailer extends PasswordResetHandler {

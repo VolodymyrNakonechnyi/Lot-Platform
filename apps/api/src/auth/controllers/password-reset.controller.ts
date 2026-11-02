@@ -14,9 +14,9 @@ import {
   type ResetPasswordDto,
   type SignInResponse,
 } from '@app/contracts';
-import { SignInResponseDto } from './dto/user.dto';
+import { SignInResponseDto } from '../dto/user.dto';
 import { minutes, Throttle } from '@nestjs/throttler';
-import { accountEmail } from './account-email';
+import { accountEmail } from '../account-email';
 
 @Public()
 @Controller('auth/password')

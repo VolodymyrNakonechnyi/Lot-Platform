@@ -8,8 +8,8 @@ import {
   type AuthJobName,
 } from 'src/common/consts';
 import type { EmailLinkEvent } from 'src/common/events';
-import { VerifyEmailMail } from './email-verification.mailer';
-import { PasswordResetMail } from './password-reset.mailer';
+import { VerifyEmailMail } from '../mails/verify-email.mail';
+import { PasswordResetMail } from '../mails/password-reset.mail';
 
 @Processor(QUEUE_NAMES.AUTH)
 export class AuthProcessor extends WorkerHost {

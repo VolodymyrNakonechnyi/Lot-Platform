@@ -4,19 +4,9 @@ import {
   MagicLinkHandler,
   type MagicLink,
 } from '@nestjs/authentication';
-import { Mailer, type Mailable } from '@nestjs/mail';
+import { Mailer } from '@nestjs/mail';
 import { UserService } from 'src/user/user.service';
-
-@Injectable()
-export class MagicLinkMail implements Mailable<MagicLink> {
-  render({ url }: MagicLink) {
-    return {
-      subject: 'Your sign-in link',
-      template: 'magic-link',
-      context: { url },
-    };
-  }
-}
+import { MagicLinkMail } from '../mails/magic-link.mail';
 
 @Injectable()
 export class MagicLinkMailer extends MagicLinkHandler {

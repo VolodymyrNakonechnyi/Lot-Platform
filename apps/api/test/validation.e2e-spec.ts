@@ -10,12 +10,12 @@ import {
 } from '@nestjs/authentication';
 import request from 'supertest';
 import type { App } from 'supertest/types';
-import { AuthController } from '../src/auth/auth.controller';
+import { AuthController } from '../src/auth/controllers/auth.controller';
 import { CredentialsService } from '../src/auth/credentials.service';
-import { EmailVerificationController } from '../src/auth/email-verification.controller';
-import { MfaController } from '../src/auth/mfa.controller';
-import { PasswordResetController } from '../src/auth/password-reset.controller';
-import { TokensController } from '../src/auth/token.controller';
+import { EmailVerificationController } from '../src/auth/controllers/email-verification.controller';
+import { MfaController } from '../src/auth/controllers/mfa.controller';
+import { PasswordResetController } from '../src/auth/controllers/password-reset.controller';
+import { TokensController } from '../src/auth/controllers/token.controller';
 import { MeController } from '../src/user/me.controller';
 import { UserService } from '../src/user/user.service';
 

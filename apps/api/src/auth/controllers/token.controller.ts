@@ -12,7 +12,7 @@ import {
   type RefreshTokenDto,
   type TokenRequestDto,
 } from '@app/contracts';
-import { CredentialsService } from './credentials.service';
+import { CredentialsService } from '../credentials.service';
 import { minutes, Throttle } from '@nestjs/throttler';
 
 @Public()

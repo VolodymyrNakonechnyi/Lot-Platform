@@ -1,4 +1,4 @@
-import type { EmailLinkEvent } from '../common/events';
+import type { EmailLinkEvent } from 'src/common/events';
 
 export class EmailVerificationRequestedEvent implements EmailLinkEvent {
   static readonly eventName = 'auth.email-verification-requested';

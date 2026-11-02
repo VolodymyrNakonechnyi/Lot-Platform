@@ -17,7 +17,7 @@ import {
   type VerifyEmailDto,
   type VerifyEmailResponse,
 } from '@app/contracts';
-import { VerifyEmailResponseDto } from './dto/user.dto';
+import { VerifyEmailResponseDto } from '../dto/user.dto';
 import type { User } from 'src/db/schema';
 
 @Controller('auth/email')

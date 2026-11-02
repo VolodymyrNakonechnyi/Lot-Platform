@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { AuthQueueProducer } from '../auth-queue.producer';
+import { AuthQueueProducer } from './auth-queue.producer';
 import {
   EmailVerificationRequestedEvent,
   PasswordResetRequestedEvent,
-} from '../auth.events';
+} from './auth.events';
 
 @Injectable()
 export class AuthListener {

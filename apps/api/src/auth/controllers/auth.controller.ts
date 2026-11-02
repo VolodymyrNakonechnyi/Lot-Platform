@@ -22,8 +22,8 @@ import {
   SignInService,
 } from '@nestjs/authentication';
 import { ZodSerializerDto } from 'nestjs-zod';
-import { PublicUserDto, SignInResponseDto } from './dto/user.dto';
-import { CredentialsService } from './credentials.service';
+import { PublicUserDto, SignInResponseDto } from '../dto/user.dto';
+import { CredentialsService } from '../credentials.service';
 import { hours, minutes, SkipThrottle, Throttle } from '@nestjs/throttler';
 
 @Controller('auth')

@@ -4,23 +4,10 @@ import {
   EmailVerificationHandler,
   type EmailVerificationLink,
 } from '@nestjs/authentication';
-import type { Mailable } from '@nestjs/mail';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { UserService } from '../user/user.service';
-import { EmailVerificationRequestedEvent } from './auth.events';
-import type { EmailLinkEvent } from '../common/events';
-import type { User } from '../db/schema';
-
-@Injectable()
-export class VerifyEmailMail implements Mailable<EmailLinkEvent> {
-  render({ url }: EmailLinkEvent) {
-    return {
-      subject: 'Confirm your email address',
-      template: 'verify-email',
-      context: { url },
-    };
-  }
-}
+import { UserService } from 'src/user/user.service';
+import type { User } from 'src/db/schema';
+import { EmailVerificationRequestedEvent } from '../queue/auth.events';
 
 @Injectable()
 export class EmailVerificationMailer extends EmailVerificationHandler {
