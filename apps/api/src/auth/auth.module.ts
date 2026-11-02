@@ -16,9 +16,23 @@ import { OidcController } from './oidc.controller';
 import { MagicLinkController } from './magic-link.controller';
 import { MagicLinkMailer } from './magic-link.mailer';
 import { SessionsController } from './sessions.controller';
+import { BullModule } from '@nestjs/bullmq';
+import { BullBoardModule } from '@bull-board/nestjs';
+import { QUEUE_NAMES } from 'src/common/consts';
+import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
+import { AuthQueueProducer } from './auth-queue.producer';
+import { AuthProcessor } from './auth.processor';
+import { AuthListener } from './listeners/auth.listener';
 
 @Module({
-  imports: [UserModule],
+  imports: [
+    UserModule,
+    BullModule.registerQueue({ name: QUEUE_NAMES.AUTH }),
+    BullBoardModule.forFeature({
+      name: QUEUE_NAMES.AUTH,
+      adapter: BullMQAdapter,
+    }),
+  ],
   providers: [
     CredentialsService,
     SessionAuth,
@@ -28,6 +42,9 @@ import { SessionsController } from './sessions.controller';
     PasswordResetMailer,
     MagicLinkMailer,
     AccountLinker,
+    AuthQueueProducer,
+    AuthProcessor,
+    AuthListener,
   ],
   controllers: [
     AuthController,

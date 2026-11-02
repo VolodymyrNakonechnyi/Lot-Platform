@@ -23,7 +23,9 @@ async function bootstrap() {
   app.enableShutdownHooks();
   app.enableCors({ origin: process.env.WEB_ORIGIN ?? true, credentials: true });
   app.set('trust proxy', 'loopback');
-  app.enableCsrfProtection();
+  app.enableCsrfProtection({
+    trustedOrigins: process.env.WEB_ORIGIN ? [process.env.WEB_ORIGIN] : [],
+  });
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
 

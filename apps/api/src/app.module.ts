@@ -19,9 +19,15 @@ import {
 import { join } from 'node:path';
 import { ThrottlerGuard, ThrottlerModule, minutes } from '@nestjs/throttler';
 import { accountEmailAndIp, skipWithoutAccount } from './auth/account-email';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { QueueModule } from './queue/queue.module';
 
 @Module({
   imports: [
+    EventEmitterModule.forRoot({
+      wildcard: false,
+      delimiter: '.',
+    }),
     DbModule,
     UserModule,
     ThrottlerModule.forRoot({
@@ -43,19 +49,6 @@ import { accountEmailAndIp, skipWithoutAccount } from './auth/account-email';
           port: Number(process.env.REDIS_PORT ?? 6379),
         },
       }),
-    }),
-    BullModule.forRootAsync('alternative-config', {
-      useFactory: () => ({
-        connection: {
-          host: process.env.REDIS_HOST ?? 'localhost',
-          port: Number(process.env.REDIS_PORT ?? 6379),
-        },
-        prefix: '{alt}',
-      }),
-    }),
-    BullModule.registerQueue({
-      configKey: 'alternative-config',
-      name: 'video',
     }),
     MailModule.forRootAsync({
       useFactory: () => ({
@@ -112,6 +105,7 @@ import { accountEmailAndIp, skipWithoutAccount } from './auth/account-email';
       }),
     }),
     AuthModule,
+    QueueModule,
   ],
   controllers: [AppController],
   providers: [

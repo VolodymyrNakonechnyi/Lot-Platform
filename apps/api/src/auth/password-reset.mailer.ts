@@ -5,12 +5,15 @@ import {
   type PasswordResetAccount,
   type PasswordResetLink,
 } from '@nestjs/authentication';
-import { Mailer, type Mailable } from '@nestjs/mail';
+import type { Mailable } from '@nestjs/mail';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UserService } from 'src/user/user.service';
+import { PasswordResetRequestedEvent } from './auth.events';
+import type { EmailLinkEvent } from 'src/common/events';
 
 @Injectable()
-export class PasswordResetMail implements Mailable<PasswordResetLink> {
-  render({ url }: PasswordResetLink) {
+export class PasswordResetMail implements Mailable<EmailLinkEvent> {
+  render({ url }: EmailLinkEvent) {
     return {
       subject: 'Reset your password',
       template: 'password-reset',
@@ -23,7 +26,7 @@ export class PasswordResetMail implements Mailable<PasswordResetLink> {
 export class PasswordResetMailer extends PasswordResetHandler {
   constructor(
     private readonly usersService: UserService,
-    private readonly mailer: Mailer,
+    private readonly events: EventEmitter2,
     registry: AuthenticationRegistry,
   ) {
     super();
@@ -43,7 +46,10 @@ export class PasswordResetMailer extends PasswordResetHandler {
   }
 
   async send(link: PasswordResetLink) {
-    await this.mailer.send(PasswordResetMail, { to: link.email, data: link });
+    await this.events.emitAsync(
+      PasswordResetRequestedEvent.eventName,
+      new PasswordResetRequestedEvent(link.email, link.url),
+    );
   }
 
   updatePassword(userId: string, passwordHash: string) {
