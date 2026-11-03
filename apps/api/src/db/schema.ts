@@ -8,6 +8,7 @@ import { decimal } from 'drizzle-orm/pg-core';
 import { smallint } from 'drizzle-orm/pg-core';
 import { boolean } from 'drizzle-orm/pg-core';
 import { check } from 'drizzle-orm/pg-core';
+import { unique } from 'drizzle-orm/pg-core';
 import {
   pgTable,
   text,
@@ -251,11 +252,32 @@ export const categoryAttributes = pgTable('category_attributes', {
   key: text('key').notNull(),
   label: text('label').notNull(),
   type: text('type', { enum: ATTRIBUTE_TYPES }).notNull(),
-  options: jsonb('options').$type<string[]>(),
   unit: text('unit'),
   required: boolean('required').notNull().default(false),
   filterable: boolean('filterable').notNull().default(false),
 });
+
+export type CategoryAttribute = typeof categoryAttributes.$inferSelect;
+export type NewCategoryAttribute = typeof categoryAttributes.$inferInsert;
+
+export const categoryAttributeOptions = pgTable(
+  'category_attribute_options',
+  {
+    id: integer('id').generatedAlwaysAsIdentity().primaryKey(),
+    attributeId: integer('attribute_id')
+      .references(() => categoryAttributes.id, { onDelete: 'cascade' })
+      .notNull(),
+    value: text('value').notNull(),
+    label: text('label').notNull(),
+    sortOrder: smallint('sort_order').notNull().default(0),
+  },
+  (table) => [unique().on(table.attributeId, table.value)],
+);
+
+export type CategoryAttributeOption =
+  typeof categoryAttributeOptions.$inferSelect;
+export type NewCategoryAttributeOption =
+  typeof categoryAttributeOptions.$inferInsert;
 
 export const lots = pgTable(
   'lots',

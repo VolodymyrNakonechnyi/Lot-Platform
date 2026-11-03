@@ -43,6 +43,13 @@
       "when": 1793487005800,
       "tag": "0005_authentication_store",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793731654912,
+      "tag": "0006_nostalgic_captain_flint",
+      "breakpoints": true
     }
   ]
 }
