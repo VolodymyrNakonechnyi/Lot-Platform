@@ -244,18 +244,33 @@ export const categories = pgTable(
 export type Category = typeof categories.$inferSelect;
 export type NewCategory = typeof categories.$inferInsert;
 
-export const categoryAttributes = pgTable('category_attributes', {
-  id: serial('id').primaryKey(),
-  categoryId: smallint('category_id')
-    .references(() => categories.id)
-    .notNull(),
-  key: text('key').notNull(),
-  label: text('label').notNull(),
-  type: text('type', { enum: ATTRIBUTE_TYPES }).notNull(),
-  unit: text('unit'),
-  required: boolean('required').notNull().default(false),
-  filterable: boolean('filterable').notNull().default(false),
-});
+export const categoryAttributes = pgTable(
+  'category_attributes',
+  {
+    id: integer('id').generatedAlwaysAsIdentity().primaryKey(),
+    categoryId: smallint('category_id')
+      .references(() => categories.id)
+      .notNull(),
+    key: text('key').notNull(),
+    label: text('label').notNull(),
+    type: text('type', { enum: ATTRIBUTE_TYPES }).notNull(),
+    multiple: boolean('multiple').notNull().default(false),
+    unit: text('unit'),
+    required: boolean('required').notNull().default(false),
+    filterable: boolean('filterable').notNull().default(false),
+  },
+  (table) => [
+    check(
+      'category_attributes_type_valid',
+      inList(table.type, ATTRIBUTE_TYPES),
+    ),
+    unique('category_attributes_category_key_uq').on(
+      table.categoryId,
+      table.key,
+    ),
+    unique('category_attributes_id_category_uq').on(table.id, table.categoryId),
+  ],
+);
 
 export type CategoryAttribute = typeof categoryAttributes.$inferSelect;
 export type NewCategoryAttribute = typeof categoryAttributes.$inferInsert;
@@ -333,15 +348,11 @@ export const lostAttributes = pgTable(
       .references(() => categoryAttributes.id)
       .notNull(),
     value: text('value').notNull(),
-    valueNumber: decimal('value_number', { precision: 12, scale: 2 }),
   },
   (table) => [
     primaryKey({ columns: [table.lotId, table.categoryAttributeId] }),
     index('lav_attr_value_idx').on(table.categoryAttributeId, table.value),
-    index('lav_attr_number_idx').on(
-      table.categoryAttributeId,
-      table.valueNumber,
-    ),
+    index('lav_attr_number_idx').on(table.categoryAttributeId),
   ],
 );
 

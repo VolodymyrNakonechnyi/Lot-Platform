@@ -50,6 +50,13 @@
       "when": 1793731654912,
       "tag": "0006_nostalgic_captain_flint",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793801133629,
+      "tag": "0007_wooden_wonder_man",
+      "breakpoints": true
     }
   ]
 }

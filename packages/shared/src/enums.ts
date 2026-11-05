@@ -9,9 +9,8 @@ export const ROLES = Object.values(ROLE) as [Role, ...Role[]];
 export const ATTRIBUTE_TYPE = {
   STRING: 'string',
   NUMBER: 'number',
+  DATE: 'date',
   BOOLEAN: 'boolean',
-  SELECT: 'select',
-  MULTISELECT: 'multiselect',
 } as const;
 export type AttributeType =
   (typeof ATTRIBUTE_TYPE)[keyof typeof ATTRIBUTE_TYPE];
@@ -76,6 +75,7 @@ export const PAYMENT_PROVIDER = {
   LIQPAY: 'LiqPay',
   STRIPE: 'Stripe',
   FONDY: 'Fondy',
+  MONO: 'Monobank',
 } as const;
 export type PaymentProvider =
   (typeof PAYMENT_PROVIDER)[keyof typeof PAYMENT_PROVIDER];
