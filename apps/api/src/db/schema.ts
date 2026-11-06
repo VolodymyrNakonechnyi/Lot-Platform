@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 import { AnyPgColumn } from 'drizzle-orm/pg-core';
 import { index } from 'drizzle-orm/pg-core';
 import { jsonb } from 'drizzle-orm/pg-core';
@@ -293,6 +293,31 @@ export type CategoryAttributeOption =
   typeof categoryAttributeOptions.$inferSelect;
 export type NewCategoryAttributeOption =
   typeof categoryAttributeOptions.$inferInsert;
+
+export const categoriesRelations = relations(categories, ({ many }) => ({
+  attributes: many(categoryAttributes),
+}));
+
+export const categoryAttributesRelations = relations(
+  categoryAttributes,
+  ({ one, many }) => ({
+    category: one(categories, {
+      fields: [categoryAttributes.categoryId],
+      references: [categories.id],
+    }),
+    options: many(categoryAttributeOptions),
+  }),
+);
+
+export const categoryAttributeOptionsRelations = relations(
+  categoryAttributeOptions,
+  ({ one }) => ({
+    attribute: one(categoryAttributes, {
+      fields: [categoryAttributeOptions.attributeId],
+      references: [categoryAttributes.id],
+    }),
+  }),
+);
 
 export const lots = pgTable(
   'lots',

@@ -22,6 +22,7 @@ import { accountEmailAndIp, skipWithoutAccount } from './auth/account-email';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { QueueModule } from './queue/queue.module';
 import { LotsModule } from './lots/lots.module';
+import { CategoriesModule } from './categories/categories.module';
 
 @Module({
   imports: [
@@ -108,6 +109,7 @@ import { LotsModule } from './lots/lots.module';
     AuthModule,
     QueueModule,
     LotsModule,
+    CategoriesModule,
   ],
   controllers: [AppController],
   providers: [

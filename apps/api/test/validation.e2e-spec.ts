@@ -5,6 +5,7 @@ import {
   EmailVerificationService,
   MfaService,
   PasswordResetService,
+  SessionService,
   SignInService,
   TokenService,
 } from '@nestjs/authentication';
@@ -29,8 +30,14 @@ const signIn = {
 };
 const emailVerification = { send: jest.fn(), verify: jest.fn() };
 const passwordReset = { request: jest.fn(), reset: jest.fn() };
-const tokens = { issue: jest.fn(), refresh: jest.fn() };
-const mfa = { enroll: jest.fn(), generateRecoveryCodes: jest.fn() };
+const tokens = { issue: jest.fn(), refresh: jest.fn(), revokeAll: jest.fn() };
+const mfa = {
+  enroll: jest.fn(),
+  generateRecoveryCodes: jest.fn(),
+  verifyTotp: jest.fn(),
+  disable: jest.fn(),
+};
+const sessions = { revokeAll: jest.fn() };
 const users = { findByEmail: jest.fn(), updateEmail: jest.fn() };
 
 function issues(body: unknown): string[] {
@@ -62,6 +69,7 @@ describe('Request validation (e2e)', () => {
         { provide: PasswordResetService, useValue: passwordReset },
         { provide: TokenService, useValue: tokens },
         { provide: MfaService, useValue: mfa },
+        { provide: SessionService, useValue: sessions },
         { provide: UserService, useValue: users },
       ],
     }).compile();

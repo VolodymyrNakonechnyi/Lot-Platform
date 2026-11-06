@@ -4,3 +4,4 @@ export * from './schemas/hello.js';
 export * from './schemas/auth/user.schema.js';
 export * from './schemas/auth/token.schema.js';
 export * from './schemas/auth/mfa.schema.js';
+export * from './schemas/catalog/category.schema.js';
