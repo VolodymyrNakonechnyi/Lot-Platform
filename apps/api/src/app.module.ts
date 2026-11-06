@@ -21,6 +21,7 @@ import { ThrottlerGuard, ThrottlerModule, minutes } from '@nestjs/throttler';
 import { accountEmailAndIp, skipWithoutAccount } from './auth/account-email';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { QueueModule } from './queue/queue.module';
+import { LotsModule } from './lots/lots.module';
 
 @Module({
   imports: [
@@ -106,6 +107,7 @@ import { QueueModule } from './queue/queue.module';
     }),
     AuthModule,
     QueueModule,
+    LotsModule,
   ],
   controllers: [AppController],
   providers: [
