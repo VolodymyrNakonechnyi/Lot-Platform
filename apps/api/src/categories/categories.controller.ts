@@ -1,4 +1,11 @@
-import { Controller, Get, NotFoundException, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  NotFoundException,
+  Param,
+} from '@nestjs/common';
 import {
   categoryIdParamSchema,
   type Category,
@@ -14,11 +21,15 @@ export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
   @Get()
+  @Public()
+  @HttpCode(HttpStatus.OK)
   async getAllCategories(): Promise<Category[]> {
     return await this.categoriesService.getAllCategories();
   }
 
   @Get(':id')
+  @Public()
+  @HttpCode(HttpStatus.OK)
   async getCategory(
     @Param({ schema: categoryIdParamSchema }) { id }: CategoryIdParamDto,
   ): Promise<CategoryWithAttributes> {
