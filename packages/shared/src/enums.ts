@@ -19,6 +19,13 @@ export const ATTRIBUTE_TYPES = Object.values(ATTRIBUTE_TYPE) as [
   ...AttributeType[],
 ];
 
+export const OPTIONS_ALLOWED = {
+  [ATTRIBUTE_TYPE.STRING]: true,
+  [ATTRIBUTE_TYPE.NUMBER]: false,
+  [ATTRIBUTE_TYPE.DATE]: false,
+  [ATTRIBUTE_TYPE.BOOLEAN]: false,
+} as const satisfies Record<AttributeType, boolean>;
+
 export const LOT_STATUS = {
   DRAFT: 'draft',
   PENDING: 'pending',
