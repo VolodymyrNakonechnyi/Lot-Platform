@@ -11,7 +11,8 @@ import {
   createCategorySchema,
   type CreateCategoryDto,
 } from '@app/contracts';
-import { DRIZZLE, type Database } from '../db/db.module';
+import { DRIZZLE } from '../db/db.module';
+import type { Database } from '../db/types';
 import * as schema from '../db/schema';
 import { categories, categoryAttributes } from '../db/schema';
 import { CategoriesService } from './categories.service';

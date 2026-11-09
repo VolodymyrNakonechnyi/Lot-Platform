@@ -12,7 +12,8 @@ import {
   type CreateCategoryAttributeDto,
   type CreateCategoryDto,
 } from '@app/contracts';
-import { DRIZZLE, type Database, type Transaction } from '../db/db.module';
+import { DRIZZLE } from '../db/db.module';
+import type { Database, Transaction } from '../db/types';
 import {
   categories,
   categoryAttributeOptions,

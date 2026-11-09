@@ -2,7 +2,8 @@ import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { and, eq, sql } from 'drizzle-orm';
 import { normalizeEmail } from '@app/contracts';
-import { DRIZZLE, type Database } from '../db/db.module';
+import { DRIZZLE } from '../db/db.module';
+import type { Database } from '../db/types';
 import { userIdentities, users, type NewUser, type User } from '../db/schema';
 import { UserCreatedEvent } from './user.events';
 

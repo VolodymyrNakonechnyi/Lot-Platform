@@ -16,7 +16,8 @@ import {
   type TotpRecord,
 } from '@nestjs/authentication';
 import { and, desc, eq, gt, isNull, lt, lte, or, sql } from 'drizzle-orm';
-import { DRIZZLE, type Database } from '../../db/db.module';
+import { DRIZZLE } from '../../db/db.module';
+import type { Database } from '../../db/types';
 import {
   emailTokens,
   magicLinks,
