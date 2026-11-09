@@ -54,3 +54,47 @@ export const categoryWithAttributesSchema = categorySchema.extend({
 export type CategoryWithAttributes = z.infer<
   typeof categoryWithAttributesSchema
 >;
+
+export const createCategoryAttributeOptionSchema = z.strictObject({
+  value: z.string().trim().min(1, 'option_value_required').max(100),
+  label: z.string().trim().min(1, 'option_label_required').max(100),
+  sortOrder: z.number().int().nonnegative().default(0),
+});
+
+export type CreateCategoryAttributeOptionDto = z.infer<
+  typeof createCategoryAttributeOptionSchema
+>;
+
+export const createCategoryAttributeSchema = z.strictObject({
+  key: z
+    .string()
+    .trim()
+    .min(1, 'key_required')
+    .max(64)
+    .regex(/^[a-z][a-z0-9_]*$/, 'invalid_key'),
+  label: z.string().trim().min(1, 'label_required').max(100),
+  type: z.enum(ATTRIBUTE_TYPES),
+  multiple: z.boolean().default(false),
+  unit: z.string().trim().min(1).max(16).nullable().default(null),
+  required: z.boolean().default(false),
+  filterable: z.boolean().default(false),
+  options: z.array(createCategoryAttributeOptionSchema).default([]),
+});
+
+export type CreateCategoryAttributeDto = z.infer<
+  typeof createCategoryAttributeSchema
+>;
+
+export const createCategorySchema = z.strictObject({
+  name: z.string().trim().min(1, 'name_required').max(100),
+  slug: z
+    .string()
+    .trim()
+    .min(1, 'slug_required')
+    .max(100)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'invalid_slug'),
+  parentId: categoryId.nullable().default(null),
+  attributes: z.array(createCategoryAttributeSchema),
+});
+
+export type CreateCategoryDto = z.infer<typeof createCategorySchema>;
