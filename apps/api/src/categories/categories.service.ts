@@ -1,6 +1,12 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { asc, eq } from 'drizzle-orm';
-import type { Category, CategoryWithAttributes } from '@app/contracts';
+import {
+  ATTRIBUTE_TYPE,
+  type Category,
+  type CategoryWithAttributes,
+  type CreateCategoryAttributeDto,
+  type CreateCategoryDto,
+} from '@app/contracts';
 import { DRIZZLE, type Database } from '../db/db.module';
 import {
   categories,
@@ -58,5 +64,60 @@ export class CategoriesService {
     });
 
     return category ?? null;
+  }
+
+  async createCategory(createCategory: CreateCategoryDto) {
+    const { attributes = [], ...categoryData } = createCategory;
+
+    this.checkHasAttributes(attributes);
+
+    return this.db.transaction(async (tx) => {
+      const [category] = await tx
+        .insert(categories)
+        .values(categoryData)
+        .returning();
+
+      for (const attribute of attributes) {
+        this.checkAttribute(attribute);
+
+        const { options, ...attrData } = attribute;
+        const [inserted] = await tx
+          .insert(categoryAttributes)
+          .values({ ...attrData, categoryId: category.id })
+          .returning();
+
+        if (options.length) {
+          await tx.insert(categoryAttributeOptions).values(
+            options.map((option) => ({
+              ...option,
+              attributeId: inserted.id,
+            })),
+          );
+        }
+      }
+      return category;
+    });
+  }
+
+  private checkHasAttributes(attributes: CreateCategoryAttributeDto[]): void {
+    if (!attributes.length) {
+      throw new BadRequestException('The category must have attributes');
+    }
+  }
+
+  private checkAttribute({
+    type,
+    multiple,
+    options,
+  }: CreateCategoryAttributeDto): void {
+    if (type !== ATTRIBUTE_TYPE.STRING && (multiple || options.length)) {
+      throw new BadRequestException(
+        `A ${type} field can be neither multiple nor carry options`,
+      );
+    }
+
+    if (multiple && !options.length) {
+      throw new BadRequestException('Multiple field must have an options');
+    }
   }
 }
