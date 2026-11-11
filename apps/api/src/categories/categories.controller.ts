@@ -1,10 +1,12 @@
 import {
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
   NotFoundException,
   Param,
+  UseGuards,
 } from '@nestjs/common';
 import {
   categoryIdParamSchema,
@@ -12,7 +14,8 @@ import {
   type CategoryIdParamDto,
   type CategoryWithAttributes,
 } from '@app/contracts';
-import { Public } from '@nestjs/authentication';
+import { Authenticate, Public } from '@nestjs/authentication';
+import { AdminGuard } from '../common/guards/admin.guard';
 import { CategoriesService } from './categories.service';
 
 @Public()
@@ -38,5 +41,15 @@ export class CategoriesController {
       throw new NotFoundException('Category not found');
     }
     return category;
+  }
+
+  @Delete(':id')
+  @Authenticate()
+  @UseGuards(AdminGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteCategory(
+    @Param({ schema: categoryIdParamSchema }) { id }: CategoryIdParamDto,
+  ): Promise<void> {
+    await this.categoriesService.deleteCategory(id);
   }
 }

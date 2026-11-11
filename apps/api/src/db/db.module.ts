@@ -8,6 +8,7 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import * as schema from './schema';
 import type { Database } from './types';
+import { databaseUrl } from '../common/env';
 
 export const PG_POOL = Symbol('PG_POOL');
 export const DRIZZLE = Symbol('DRIZZLE');
@@ -17,11 +18,7 @@ export const DRIZZLE = Symbol('DRIZZLE');
   providers: [
     {
       provide: PG_POOL,
-      useFactory: () => {
-        const connectionString = process.env.DATABASE_URL;
-        if (!connectionString) throw new Error('DATABASE_URL is not set');
-        return new Pool({ connectionString });
-      },
+      useFactory: () => new Pool({ connectionString: databaseUrl() }),
     },
     {
       provide: DRIZZLE,

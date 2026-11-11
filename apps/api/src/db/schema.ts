@@ -249,9 +249,9 @@ export const categoryAttributes = pgTable(
   {
     id: integer('id').generatedAlwaysAsIdentity().primaryKey(),
     categoryId: smallint('category_id')
-      .references(() => categories.id)
+      .references(() => categories.id, { onDelete: 'cascade' })
       .notNull(),
-    key: text('key').notNull(),
+    key: text('key').notNull().unique(),
     label: text('label').notNull(),
     type: text('type', { enum: ATTRIBUTE_TYPES }).notNull(),
     multiple: boolean('multiple').notNull().default(false),

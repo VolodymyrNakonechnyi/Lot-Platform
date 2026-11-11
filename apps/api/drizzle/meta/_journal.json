@@ -57,6 +57,13 @@
       "when": 1793801133629,
       "tag": "0007_wooden_wonder_man",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794419903958,
+      "tag": "0008_motionless_sage",
+      "breakpoints": true
     }
   ]
 }

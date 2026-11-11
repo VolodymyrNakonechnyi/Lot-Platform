@@ -3,6 +3,7 @@ import { PasswordHasher } from '@nestjs/authentication';
 import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
+import { databaseUrl } from '../common/env';
 import { users, type NewUser } from './schema';
 
 const SEED_PASSWORD = process.env.SEED_PASSWORD ?? 'mockadmin123';
@@ -46,10 +47,7 @@ const seedUsers: Omit<NewUser, 'password'>[] = [
 async function seed(): Promise<void> {
   if (existsSync('.env')) process.loadEnvFile('.env');
 
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) throw new Error('DATABASE_URL is not set');
-
-  const pool = new Pool({ connectionString });
+  const pool = new Pool({ connectionString: databaseUrl() });
   const db = drizzle(pool);
 
   try {
