@@ -96,6 +96,7 @@
     "testEnvironment": "node",
     "modulePaths": [
       "<rootDir>/.."
-    ]
+    ],
+    "globalSetup": "<rootDir>/../test/global-setup.ts"
   }
 }

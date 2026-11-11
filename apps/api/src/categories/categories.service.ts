@@ -3,14 +3,16 @@ import {
   ConflictException,
   Inject,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
-import { asc, eq } from 'drizzle-orm';
+import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import {
   OPTIONS_ALLOWED,
   type Category,
   type CategoryWithAttributes,
-  type CreateCategoryAttributeDto,
+  type CategoryAttributeInputDto,
   type CreateCategoryDto,
+  type UpdateCategoryDto,
 } from '@app/contracts';
 import { DRIZZLE } from '../db/db.module';
 import type { Database, Transaction } from '../db/types';
@@ -22,6 +24,7 @@ import {
   type CategoryAttributeOption as CategoryAttributeOptionRow,
 } from 'src/db/schema';
 import { isForeignKeyViolation, isUniqueViolation } from 'src/db/errors';
+import { generateSlug } from '../common/slugify';
 
 @Injectable()
 export class CategoriesService {
@@ -99,13 +102,305 @@ export class CategoriesService {
     });
   }
 
-  private checkHasAttributes(attributes: CreateCategoryAttributeDto[]): void {
+  async updateCategory(
+    id: number,
+    dto: UpdateCategoryDto,
+  ): Promise<CategoryWithAttributes> {
+    this.validateAttributes(dto.attributes);
+
+    return await this.db.transaction(async (tx) => {
+      const category = await this.updateCategoryRow(tx, id, dto);
+
+      const existingAttributes = await tx
+        .select()
+        .from(categoryAttributes)
+        .where(eq(categoryAttributes.categoryId, category.id));
+
+      const existingKeys = new Set(existingAttributes.map(({ key }) => key));
+      const incomingKeys = new Set(
+        dto.attributes.map(({ label }) => generateSlug(label)),
+      );
+
+      const removedAttributes = existingAttributes.filter(
+        ({ key }) => !incomingKeys.has(key),
+      );
+      const keptAttributes = dto.attributes.filter((attr) =>
+        existingKeys.has(generateSlug(attr.label)),
+      );
+      const newAttributes = dto.attributes.filter(
+        (attr) => !existingKeys.has(generateSlug(attr.label)),
+      );
+
+      await this.deleteCategoryAttributes(tx, removedAttributes);
+      const updatedAttributes = await this.updateCategoryAttributes(
+        tx,
+        category.id,
+        keptAttributes,
+      );
+      const insertedAttributes = await this.insertAttributes(
+        tx,
+        category.id,
+        newAttributes,
+      );
+
+      const updatedOptions = await this.updateAttributeOptions(
+        tx,
+        updatedAttributes,
+        keptAttributes,
+      );
+      const insertedOptions = await this.insertAttributeOptions(
+        tx,
+        insertedAttributes,
+        newAttributes,
+      );
+
+      return this.buildCategoryResponse(
+        category,
+        [...updatedAttributes, ...insertedAttributes],
+        [...updatedOptions, ...insertedOptions],
+      );
+    });
+  }
+
+  async deleteCategory(id: number): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      const attributes = await tx
+        .select()
+        .from(categoryAttributes)
+        .where(eq(categoryAttributes.categoryId, id));
+
+      await this.deleteCategoryAttributes(tx, attributes);
+
+      try {
+        const [deleted] = await tx
+          .delete(categories)
+          .where(eq(categories.id, id))
+          .returning({ id: categories.id });
+
+        if (!deleted) {
+          throw new NotFoundException(`Category ${id} not found`);
+        }
+      } catch (error) {
+        if (isForeignKeyViolation(error, 'lots_category_id_categories_id_fk')) {
+          throw new ConflictException(
+            'Category is used by lots and cannot be removed',
+          );
+        }
+
+        if (
+          isForeignKeyViolation(error, 'categories_parent_id_categories_id_fk')
+        ) {
+          throw new ConflictException(
+            'Category has subcategories and cannot be removed',
+          );
+        }
+
+        throw error;
+      }
+    });
+  }
+
+  private async updateCategoryRow(
+    tx: Transaction,
+    id: number,
+    dto: UpdateCategoryDto,
+  ) {
+    const { name, slug, parentId } = dto;
+
+    const [category] = await tx
+      .update(categories)
+      .set({ name, slug, parentId })
+      .where(eq(categories.id, id))
+      .returning();
+
+    return category;
+  }
+
+  private async deleteCategoryAttributes(
+    tx: Transaction,
+    attributes: CategoryAttributeRow[],
+  ): Promise<void> {
+    if (!attributes.length) return;
+
+    try {
+      await tx.delete(categoryAttributes).where(
+        inArray(
+          categoryAttributes.id,
+          attributes.map(({ id }) => id),
+        ),
+      );
+    } catch (error) {
+      if (
+        isForeignKeyViolation(
+          error,
+          'lots_attributes_category_attribute_id_category_attributes_id_fk',
+        )
+      ) {
+        throw new ConflictException(
+          'Attribute is used by lots and cannot be removed',
+        );
+      }
+
+      throw error;
+    }
+  }
+
+  private async updateCategoryAttributes(
+    tx: Transaction,
+    categoryId: number,
+    attributes: CategoryAttributeInputDto[],
+  ): Promise<CategoryAttributeRow[]> {
+    if (!attributes.length) {
+      return [];
+    }
+
+    const values = attributes.map(
+      ({ label, type, multiple, unit, required, filterable }) =>
+        sql`(${generateSlug(label)}::text, ${label}::text, ${type}::text, ${multiple}::boolean, ${unit}::text, ${required}::boolean, ${filterable}::boolean)`,
+    );
+
+    try {
+      return await tx
+        .update(categoryAttributes)
+        .set({
+          label: sql`v.label`,
+          type: sql`v.type`,
+          multiple: sql`v.multiple`,
+          unit: sql`v.unit`,
+          required: sql`v.required`,
+          filterable: sql`v.filterable`,
+        })
+        .from(
+          sql`(values ${sql.join(values, sql`, `)}) as v(key, label, type, multiple, unit, required, filterable)`,
+        )
+        .where(
+          and(
+            eq(categoryAttributes.categoryId, categoryId),
+            sql`${categoryAttributes.key} = v.key`,
+          ),
+        )
+        .returning();
+    } catch (error) {
+      if (isUniqueViolation(error, 'category_attributes_category_key_uq')) {
+        throw new ConflictException('Duplicate attribute key in category');
+      }
+
+      throw error;
+    }
+  }
+
+  private async updateAttributeOptions(
+    tx: Transaction,
+    updatedAttributes: CategoryAttributeRow[],
+    attributes: CategoryAttributeInputDto[],
+  ): Promise<CategoryAttributeOptionRow[]> {
+    if (!updatedAttributes.length) return [];
+
+    const attributeIdByKey = new Map(
+      updatedAttributes.map(({ key, id }) => [key, id]),
+    );
+
+    const incoming = attributes.flatMap(({ label: attributeLabel, options }) =>
+      options.map(({ value, label, sortOrder }) => ({
+        value,
+        label,
+        sortOrder,
+        attributeId: attributeIdByKey.get(generateSlug(attributeLabel))!,
+      })),
+    );
+
+    const existing = await tx
+      .select()
+      .from(categoryAttributeOptions)
+      .where(
+        inArray(
+          categoryAttributeOptions.attributeId,
+          updatedAttributes.map(({ id }) => id),
+        ),
+      );
+
+    const identity = (attributeId: number, value: string) =>
+      `${attributeId}:${value}`;
+    const existingByIdentity = new Map(
+      existing.map((option) => [
+        identity(option.attributeId, option.value),
+        option,
+      ]),
+    );
+    const incomingIdentities = new Set(
+      incoming.map(({ attributeId, value }) => identity(attributeId, value)),
+    );
+
+    const removed = existing.filter(
+      (option) =>
+        !incomingIdentities.has(identity(option.attributeId, option.value)),
+    );
+    const kept = incoming.filter(({ attributeId, value }) =>
+      existingByIdentity.has(identity(attributeId, value)),
+    );
+    const added = incoming.filter(
+      ({ attributeId, value }) =>
+        !existingByIdentity.has(identity(attributeId, value)),
+    );
+
+    if (removed.length) {
+      await tx.delete(categoryAttributeOptions).where(
+        inArray(
+          categoryAttributeOptions.id,
+          removed.map(({ id }) => id),
+        ),
+      );
+    }
+
+    try {
+      const updated = kept.length
+        ? await tx
+            .update(categoryAttributeOptions)
+            .set({ label: sql`v.label`, sortOrder: sql`v.sort_order` })
+            .from(
+              sql`(values ${sql.join(
+                kept.map(
+                  ({ attributeId, value, label, sortOrder }) =>
+                    sql`(${attributeId}::integer, ${value}::text, ${label}::text, ${sortOrder}::smallint)`,
+                ),
+                sql`, `,
+              )}) as v(attribute_id, value, label, sort_order)`,
+            )
+            .where(
+              and(
+                eq(categoryAttributeOptions.attributeId, sql`v.attribute_id`),
+                eq(categoryAttributeOptions.value, sql`v.value`),
+              ),
+            )
+            .returning()
+        : [];
+
+      const inserted = added.length
+        ? await tx.insert(categoryAttributeOptions).values(added).returning()
+        : [];
+
+      return [...updated, ...inserted];
+    } catch (error) {
+      if (
+        isUniqueViolation(
+          error,
+          'category_attribute_options_attribute_id_value_unique',
+        )
+      ) {
+        throw new ConflictException('Duplicate option value in attribute');
+      }
+
+      throw error;
+    }
+  }
+
+  private checkHasAttributes(attributes: CategoryAttributeInputDto[]): void {
     if (!attributes.length) {
       throw new BadRequestException('The category must have attributes');
     }
   }
 
-  private validateAttributes(attributes: CreateCategoryAttributeDto[]): void {
+  private validateAttributes(attributes: CategoryAttributeInputDto[]): void {
     this.checkHasAttributes(attributes);
     attributes.forEach((attribute) => this.checkAttribute(attribute));
   }
@@ -141,7 +436,7 @@ export class CategoriesService {
   private async insertAttributes(
     tx: Transaction,
     categoryId: number,
-    attributes: CreateCategoryAttributeDto[],
+    attributes: CategoryAttributeInputDto[],
   ): Promise<CategoryAttributeRow[]> {
     if (!attributes.length) return [];
 
@@ -149,13 +444,18 @@ export class CategoriesService {
       return await tx
         .insert(categoryAttributes)
         .values(
-          attributes.map(({ key, label, type, multiple }) => ({
-            key,
-            label,
-            type,
-            multiple,
-            categoryId,
-          })),
+          attributes.map(
+            ({ label, type, multiple, unit, required, filterable }) => ({
+              key: generateSlug(label),
+              label,
+              type,
+              multiple,
+              unit,
+              required,
+              filterable,
+              categoryId,
+            }),
+          ),
         )
         .returning();
     } catch (error) {
@@ -170,17 +470,18 @@ export class CategoriesService {
   private async insertAttributeOptions(
     tx: Transaction,
     insertedAttributes: CategoryAttributeRow[],
-    attributes: CreateCategoryAttributeDto[],
+    attributes: CategoryAttributeInputDto[],
   ): Promise<CategoryAttributeOptionRow[]> {
     const attributeIdByKey = new Map(
       insertedAttributes.map(({ key, id }) => [key, id]),
     );
 
-    const rows = attributes.flatMap(({ key, options }) =>
-      options.map(({ value, label }) => ({
+    const rows = attributes.flatMap(({ label: attributeLabel, options }) =>
+      options.map(({ value, label, sortOrder }) => ({
         value,
         label,
-        attributeId: attributeIdByKey.get(key)!,
+        sortOrder,
+        attributeId: attributeIdByKey.get(generateSlug(attributeLabel))!,
       })),
     );
 
@@ -222,22 +523,22 @@ export class CategoriesService {
   }
 
   private checkAttribute({
-    key,
+    label,
     type,
     multiple,
     options,
-  }: CreateCategoryAttributeDto): void {
+  }: CategoryAttributeInputDto): void {
     const hasOptions = options.length > 0;
 
     if (hasOptions && !OPTIONS_ALLOWED[type]) {
       throw new BadRequestException(
-        `Attribute "${key}": type "${type}" cannot have options`,
+        `Attribute "${label}": type "${type}" cannot have options`,
       );
     }
 
     if (multiple && !hasOptions) {
       throw new BadRequestException(
-        `Attribute "${key}": multiple requires options`,
+        `Attribute "${label}": multiple requires options`,
       );
     }
   }
