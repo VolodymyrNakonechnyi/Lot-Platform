@@ -322,7 +322,9 @@ export const categoryAttributeOptionsRelations = relations(
 export const lots = pgTable(
   'lots',
   {
-    id: serial('id').primaryKey(),
+    id: uuid('id')
+      .primaryKey()
+      .default(sql`uuidv7()`),
     name: text().notNull(),
     categoryId: smallint('category_id')
       .references(() => categories.id)
@@ -366,7 +368,7 @@ export type NewLot = typeof lots.$inferInsert;
 export const lostAttributes = pgTable(
   'lots_attributes',
   {
-    lotId: integer('lot_id')
+    lotId: uuid('lot_id')
       .references(() => lots.id)
       .notNull(),
     categoryAttributeId: integer('category_attribute_id')
@@ -388,7 +390,7 @@ export const bids = pgTable(
     userId: uuid('user_id')
       .references(() => users.id)
       .notNull(),
-    lotId: integer('lot_id')
+    lotId: uuid('lot_id')
       .references(() => lots.id, { onDelete: 'cascade' })
       .notNull(),
     amount: decimal('amount', { precision: 12, scale: 2 }).notNull(),
@@ -420,7 +422,7 @@ export type NewDeliveryMethod = typeof deliveryMethods.$inferInsert;
 export const lotDeliveryOptions = pgTable(
   'lot_delivery_options',
   {
-    lotId: integer('lot_id')
+    lotId: uuid('lot_id')
       .references(() => lots.id)
       .notNull(),
     deliveryMethodId: smallint('delivery_method_id')
@@ -442,7 +444,7 @@ export type NewLotDeliveryOption = typeof lotDeliveryOptions.$inferInsert;
 export const lotWatchers = pgTable(
   'lot_watchers',
   {
-    lotId: integer('lot_id')
+    lotId: uuid('lot_id')
       .references(() => lots.id, { onDelete: 'cascade' })
       .notNull(),
     userId: uuid('user_id')
@@ -467,7 +469,7 @@ export type NewLotWatcher = typeof lotWatchers.$inferInsert;
 export const lotViews = pgTable(
   'lot_views',
   {
-    lotId: integer('lot_id')
+    lotId: uuid('lot_id')
       .references(() => lots.id, { onDelete: 'cascade' })
       .notNull(),
     visitorId: uuid('visitor_id').notNull(),
@@ -493,7 +495,7 @@ export const lotImages = pgTable(
   'lot_images',
   {
     id: serial('id').primaryKey(),
-    lotId: integer('lot_id')
+    lotId: uuid('lot_id')
       .references(() => lots.id, { onDelete: 'cascade' })
       .notNull(),
     url: text().notNull(),
@@ -514,7 +516,7 @@ export const payments = pgTable(
     id: uuid('id')
       .primaryKey()
       .default(sql`uuidv7()`),
-    lotId: integer('lot_id')
+    lotId: uuid('lot_id')
       .references(() => lots.id)
       .notNull(),
     payerId: uuid('payer_id')
