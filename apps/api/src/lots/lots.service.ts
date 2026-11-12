@@ -21,9 +21,26 @@ export class LotsService {
             'bid_count',
           ),
       }),
+      columns: {
+        id: true,
+        name: true,
+        status: true,
+        startPrice: true,
+        soldPrice: true,
+        minBidStep: true,
+        description: true,
+        returnPolicy: true,
+        startDate: true,
+        endDate: true,
+        updatedAt: true,
+        createdAt: true,
+      },
       with: {
         category: {
           columns: { id: true, name: true, slug: true, parentId: true },
+        },
+        buyer: {
+          columns: { id: true, username: true, name: true, avatarUrl: true },
         },
         seller: {
           columns: { id: true, username: true, name: true, avatarUrl: true },

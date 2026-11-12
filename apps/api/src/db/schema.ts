@@ -370,6 +370,10 @@ export const lotsRelations = relations(lots, ({ one, many }) => ({
     fields: [lots.categoryId],
     references: [categories.id],
   }),
+  buyer: one(users, {
+    fields: [lots.buyerId],
+    references: [users.id],
+  }),
   seller: one(users, {
     fields: [lots.sellerId],
     references: [users.id],
