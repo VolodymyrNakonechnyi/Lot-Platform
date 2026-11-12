@@ -365,6 +365,20 @@ export const lots = pgTable(
 export type Lot = typeof lots.$inferSelect;
 export type NewLot = typeof lots.$inferInsert;
 
+export const lotsRelations = relations(lots, ({ one, many }) => ({
+  category: one(categories, {
+    fields: [lots.categoryId],
+    references: [categories.id],
+  }),
+  seller: one(users, {
+    fields: [lots.sellerId],
+    references: [users.id],
+  }),
+  images: many(lotImages),
+  deliveryOptions: many(lotDeliveryOptions),
+  attributes: many(lostAttributes),
+}));
+
 export const lostAttributes = pgTable(
   'lots_attributes',
   {
@@ -383,31 +397,16 @@ export const lostAttributes = pgTable(
   ],
 );
 
-export const bids = pgTable(
-  'bids',
-  {
-    id: serial('id').primaryKey(),
-    userId: uuid('user_id')
-      .references(() => users.id)
-      .notNull(),
-    lotId: uuid('lot_id')
-      .references(() => lots.id, { onDelete: 'cascade' })
-      .notNull(),
-    amount: decimal('amount', { precision: 12, scale: 2 }).notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [
-    check('bid_amount_positive', sql`${table.amount} > 0`),
-    uniqueIndex('bids_lot_amount_idx').on(table.lotId, table.amount),
-    index('bids_lot_top_idx').on(table.lotId, sql`${table.amount} DESC`),
-    index('bids_user_idx').on(table.userId, sql`${table.createdAt} DESC`),
-  ],
-);
-
-export type Bid = typeof bids.$inferSelect;
-export type NewBit = typeof bids.$inferInsert;
+export const lotsRelationsAttributes = relations(lostAttributes, ({ one }) => ({
+  lot: one(lots, {
+    fields: [lostAttributes.lotId],
+    references: [lots.id],
+  }),
+  categoryAttribute: one(categoryAttributes, {
+    fields: [lostAttributes.categoryAttributeId],
+    references: [categoryAttributes.id],
+  }),
+}));
 
 export const deliveryMethods = pgTable('delivery_methods', {
   id: smallint('id').generatedAlwaysAsIdentity().primaryKey(),
@@ -440,6 +439,46 @@ export const lotDeliveryOptions = pgTable(
 
 export type LotDeliveryOption = typeof lotDeliveryOptions.$inferSelect;
 export type NewLotDeliveryOption = typeof lotDeliveryOptions.$inferInsert;
+
+export const lotDeliveryOptionsRelations = relations(
+  lotDeliveryOptions,
+  ({ one }) => ({
+    lot: one(lots, {
+      fields: [lotDeliveryOptions.lotId],
+      references: [lots.id],
+    }),
+    method: one(deliveryMethods, {
+      fields: [lotDeliveryOptions.deliveryMethodId],
+      references: [deliveryMethods.id],
+    }),
+  }),
+);
+
+export const bids = pgTable(
+  'bids',
+  {
+    id: serial('id').primaryKey(),
+    userId: uuid('user_id')
+      .references(() => users.id)
+      .notNull(),
+    lotId: uuid('lot_id')
+      .references(() => lots.id, { onDelete: 'cascade' })
+      .notNull(),
+    amount: decimal('amount', { precision: 12, scale: 2 }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check('bid_amount_positive', sql`${table.amount} > 0`),
+    uniqueIndex('bids_lot_amount_idx').on(table.lotId, table.amount),
+    index('bids_lot_top_idx').on(table.lotId, sql`${table.amount} DESC`),
+    index('bids_user_idx').on(table.userId, sql`${table.createdAt} DESC`),
+  ],
+);
+
+export type Bid = typeof bids.$inferSelect;
+export type NewBit = typeof bids.$inferInsert;
 
 export const lotWatchers = pgTable(
   'lot_watchers',
@@ -509,6 +548,13 @@ export const lotImages = pgTable(
 
 export type LotImage = typeof lotImages.$inferSelect;
 export type NewLotImage = typeof lotImages.$inferInsert;
+
+export const lotsImagesRelations = relations(lotImages, ({ one }) => ({
+  lot: one(lots, {
+    fields: [lotImages.lotId],
+    references: [lots.id],
+  }),
+}));
 
 export const payments = pgTable(
   'payments',
