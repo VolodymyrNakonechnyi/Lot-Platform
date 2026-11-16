@@ -23,8 +23,9 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { QueueModule } from './queue/queue.module';
 import { LotsModule } from './lots/lots.module';
 import { CategoriesModule } from './categories/categories.module';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import config from './config/config';
+import type { AppConfig } from './config/types';
 import { validateEnv } from './config/env.schema';
 
 @Module({
@@ -55,66 +56,73 @@ import { validateEnv } from './config/env.schema';
       ],
     }),
     BullModule.forRootAsync({
-      useFactory: () => ({
-        connection: {
-          host: process.env.REDIS_HOST ?? 'localhost',
-          port: Number(process.env.REDIS_PORT ?? 6379),
-        },
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<AppConfig, true>) => ({
+        connection: config.get('redis', { infer: true }),
       }),
     }),
     MailModule.forRootAsync({
-      useFactory: () => ({
-        // Your provider in production. In development, each email (links
-        // included) is printed to the log.
-        transport: process.env.SMTP_URL
-          ? new SmtpTransport({ url: process.env.SMTP_URL })
-          : new LogMailTransport(),
-        // The emails' HTML: the templates in mail/templates, next to this file
-        templates: new FileTemplateEngine({
-          dir: join(__dirname, 'mail/templates'),
-        }),
-        from: process.env.MAIL_FROM ?? 'Accounts <accounts@example.com>',
-      }),
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<AppConfig, true>) => {
+        const mail = config.get('mail', { infer: true });
+
+        return {
+          transport: mail.smtpUrl
+            ? new SmtpTransport({ url: mail.smtpUrl })
+            : new LogMailTransport(),
+          templates: new FileTemplateEngine({
+            dir: join(__dirname, 'mail/templates'),
+          }),
+          from: mail.from,
+        };
+      },
     }),
     AuthenticationModule.forRootAsync({
-      useFactory: () => ({
-        session: {
-          trustedOrigins: process.env.WEB_ORIGIN
-            ? [process.env.WEB_ORIGIN]
-            : undefined,
-          metadata: (request) => ({
-            ip: request.ip,
-            userAgent: request.headers['user-agent'],
-          }),
-          absoluteTtl: '14d',
-          idleTtl: '3d',
-        },
-        emailVerification: { url: `${process.env.WEB_ORIGIN}/verify-email` },
-        passwordReset: { url: `${process.env.WEB_ORIGIN}/reset-password` },
-        magicLink: { url: `${process.env.WEB_ORIGIN}/sign-in/magic` },
-        accessToken: {
-          key: process.env.JWT_PRIVATE_KEY!, // PEM private key P-256
-          alg: 'ES256',
-          kid: process.env.JWT_KID!,
-          issuer: 'https://api.example.com',
-          audience: 'mobile-app',
-          ttl: '15m',
-        },
-        mfa: {
-          encryption: { keys: [process.env.TOTP_ENCRYPTION_KEY!] },
-          issuer: 'Example',
-        },
-        oidc: {
-          // The callback route of OidcController, registered with Google.
-          callbackUrl: `${process.env.APP_URL}/auth/oidc/:provider/callback`,
-          providers: {
-            google: google({
-              clientId: process.env.GOOGLE_CLIENT_ID!,
-              clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<AppConfig, true>) => {
+        const appUrl = config.get('appUrl', { infer: true });
+        const webOrigin = config.get('webOrigin', { infer: true });
+        const jwt = config.get('jwt', { infer: true });
+        const oauth = config.get('google', { infer: true });
+
+        return {
+          session: {
+            trustedOrigins: [webOrigin],
+            metadata: (request) => ({
+              ip: request.ip,
+              userAgent: request.headers['user-agent'],
             }),
+            absoluteTtl: '14d',
+            idleTtl: '3d',
           },
-        },
-      }),
+          emailVerification: { url: `${webOrigin}/verify-email` },
+          passwordReset: { url: `${webOrigin}/reset-password` },
+          magicLink: { url: `${webOrigin}/sign-in/magic` },
+          accessToken: {
+            key: jwt.privateKey,
+            alg: 'ES256',
+            kid: jwt.kid,
+            issuer: appUrl,
+            audience: 'mobile-app',
+            ttl: '15m',
+          },
+          mfa: {
+            encryption: {
+              keys: [config.get('mfa.totpEncryptionKey', { infer: true })],
+            },
+            issuer: 'Example',
+          },
+          oidc: {
+            callbackUrl: `${appUrl}/auth/oidc/:provider/callback`,
+            providers: {
+              google: google({
+                clientId: oauth.clientId!,
+                clientSecret: oauth.clientSecret!,
+              }),
+            },
+          },
+        };
+      },
     }),
     AuthModule,
     QueueModule,

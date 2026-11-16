@@ -2,10 +2,10 @@ import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import { join } from 'node:path';
-import { databaseUrl } from '../src/common/env';
+import { appConfig } from '../src/config/config';
 
 export default async function globalSetup(): Promise<void> {
-  const url = new URL(databaseUrl());
+  const url = new URL(appConfig().database.url);
   const database = url.pathname.slice(1);
 
   const adminUrl = new URL(url.toString());

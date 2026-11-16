@@ -3,10 +3,8 @@ import { PasswordHasher } from '@nestjs/authentication';
 import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
-import { databaseUrl } from '../common/env';
+import { appConfig } from '../config/config';
 import { users, type NewUser } from './schema';
-
-const SEED_PASSWORD = process.env.SEED_PASSWORD ?? 'mockadmin123';
 
 const seedUsers: Omit<NewUser, 'password'>[] = [
   {
@@ -47,7 +45,8 @@ const seedUsers: Omit<NewUser, 'password'>[] = [
 async function seed(): Promise<void> {
   if (existsSync('.env')) process.loadEnvFile('.env');
 
-  const pool = new Pool({ connectionString: databaseUrl() });
+  const config = appConfig();
+  const pool = new Pool({ connectionString: config.database.url });
   const db = drizzle(pool);
 
   try {
@@ -55,7 +54,10 @@ async function seed(): Promise<void> {
     const values: NewUser[] = [];
 
     for (const user of seedUsers) {
-      values.push({ ...user, password: await hasher.hash(SEED_PASSWORD) });
+      values.push({
+        ...user,
+        password: await hasher.hash(config.seed.password),
+      });
     }
 
     const seeded = await db
@@ -76,7 +78,7 @@ async function seed(): Promise<void> {
     console.log(
       `seeded ${seeded.length} of ${seedUsers.length}, users in table: ${total}`,
     );
-    console.log(`seed password: ${SEED_PASSWORD}`);
+    console.log(`seed password: ${config.seed.password}`);
   } finally {
     await pool.end();
   }

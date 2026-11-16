@@ -27,14 +27,14 @@ import {
   users,
 } from '../db/schema';
 import { CategoriesService } from './categories.service';
-import { databaseUrl } from '../common/env';
+import { appConfig } from '../config/config';
 
 describe('CategoriesService', () => {
   let service: CategoriesService;
   let pool: Pool;
 
   beforeAll(async () => {
-    pool = new Pool({ connectionString: databaseUrl() });
+    pool = new Pool({ connectionString: appConfig().database.url });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

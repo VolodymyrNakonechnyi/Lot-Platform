@@ -8,12 +8,15 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UserService } from 'src/user/user.service';
 import type { User } from 'src/db/schema';
 import { EmailVerificationRequestedEvent } from '../queue/auth.events';
+import { ConfigService } from '@nestjs/config';
+import type { AppConfig } from 'src/config/types';
 
 @Injectable()
 export class EmailVerificationMailer extends EmailVerificationHandler {
   constructor(
     private readonly userService: UserService,
     private readonly events: EventEmitter2,
+    private readonly config: ConfigService<AppConfig, true>,
     registry: AuthenticationRegistry,
   ) {
     super();
@@ -21,7 +24,8 @@ export class EmailVerificationMailer extends EmailVerificationHandler {
   }
 
   async send(link: EmailVerificationLink) {
-    const to = process.env.MAIL_REDIRECT_TO ?? link.email;
+    const to =
+      this.config.get('mail.redirectTo', { infer: true }) ?? link.email;
     await this.events.emitAsync(
       EmailVerificationRequestedEvent.eventName,
       new EmailVerificationRequestedEvent(to, link.url),

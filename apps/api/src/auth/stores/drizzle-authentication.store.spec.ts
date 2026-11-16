@@ -8,6 +8,7 @@ import { Pool } from 'pg';
 import * as schema from '../../db/schema';
 import { sessions, users } from '../../db/schema';
 import { DrizzleAuthenticationStore } from './drizzle-authentication.store';
+import { appConfig } from '../../config/config';
 
 type Database = NodePgDatabase<typeof schema>;
 
@@ -37,18 +38,27 @@ async function emptyStore() {
   };
 }
 
-const describeDatabase = process.env.DATABASE_URL ? describe : describe.skip;
+function configuredDatabaseUrl(): string | null {
+  try {
+    return appConfig().database.url;
+  } catch {
+    return null;
+  }
+}
+
+const baseUrl = configuredDatabaseUrl();
+const describeDatabase = baseUrl ? describe : describe.skip;
 
 describeDatabase('DrizzleAuthenticationStore', () => {
   jest.setTimeout(120_000);
 
   beforeAll(async () => {
-    const admin = new Pool({ connectionString: process.env.DATABASE_URL });
+    const admin = new Pool({ connectionString: baseUrl! });
     await admin.query(`DROP DATABASE IF EXISTS ${DATABASE} WITH (FORCE)`);
     await admin.query(`CREATE DATABASE ${DATABASE}`);
     await admin.end();
 
-    const url = new URL(process.env.DATABASE_URL!);
+    const url = new URL(baseUrl!);
     url.pathname = `/${DATABASE}`;
     pool = new Pool({ connectionString: url.toString(), max: 10 });
     db = drizzle(pool, { schema });

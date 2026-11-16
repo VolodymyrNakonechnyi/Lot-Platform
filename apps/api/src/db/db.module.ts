@@ -8,7 +8,8 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import * as schema from './schema';
 import type { Database } from './types';
-import { databaseUrl } from '../common/env';
+import { ConfigService } from '@nestjs/config';
+import type { AppConfig } from '../config/types';
 
 export const PG_POOL = Symbol('PG_POOL');
 export const DRIZZLE = Symbol('DRIZZLE');
@@ -18,7 +19,11 @@ export const DRIZZLE = Symbol('DRIZZLE');
   providers: [
     {
       provide: PG_POOL,
-      useFactory: () => new Pool({ connectionString: databaseUrl() }),
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<AppConfig, true>) =>
+        new Pool({
+          connectionString: config.get('database.url', { infer: true }),
+        }),
     },
     {
       provide: DRIZZLE,

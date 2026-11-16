@@ -1,45 +1,20 @@
+import { NODE_ENV } from '../common/env';
 import { validateEnv, type Env } from './env.schema';
+import type { AppConfig } from './types';
 
-export interface AppConfig {
-  nodeEnv: Env['NODE_ENV'];
-  port: number;
-  appUrl: string;
-  webOrigin: string;
-  database: {
-    url: string;
-    testUrl?: string;
-  };
-  redis: {
-    host: string;
-    port: number;
-  };
-  mail: {
-    smtpUrl?: string;
-    from: string;
-    redirectTo?: string;
-  };
-  jwt: {
-    privateKey: string;
-    kid: string;
-  };
-  mfa: {
-    totpEncryptionKey: string;
-  };
-  google: {
-    clientId?: string;
-    clientSecret?: string;
-  };
-  storage: {
-    endpoint: string;
-    region: string;
-    accessKeyId: string;
-    secretAccessKey: string;
-    bucket: string;
-    cdnBaseUrl: string;
-  };
+function databaseUrl(env: Env): string {
+  if (env.NODE_ENV !== NODE_ENV.TEST) {
+    return env.DATABASE_URL;
+  }
+
+  if (!env.TEST_DATABASE_URL) {
+    throw new Error('TEST_DATABASE_URL is not set');
+  }
+
+  return env.TEST_DATABASE_URL;
 }
 
-export default (): AppConfig => {
+function build(): AppConfig {
   const env = validateEnv(process.env);
 
   return {
@@ -49,8 +24,7 @@ export default (): AppConfig => {
     webOrigin: env.WEB_ORIGIN,
 
     database: {
-      url: env.DATABASE_URL,
-      testUrl: env.TEST_DATABASE_URL,
+      url: databaseUrl(env),
     },
 
     redis: {
@@ -88,5 +62,17 @@ export default (): AppConfig => {
         env.CDN_BASE_URL ?? `${env.S3_ENDPOINT}/${env.S3_BUCKET}`
       ).replace(/\/+$/, ''),
     },
+
+    seed: {
+      password: env.SEED_PASSWORD,
+    },
   };
-};
+}
+
+let cached: AppConfig | undefined;
+
+export function appConfig(): AppConfig {
+  return (cached ??= build());
+}
+
+export default appConfig;
