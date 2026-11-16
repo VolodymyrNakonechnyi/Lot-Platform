@@ -1,9 +1,9 @@
 import { BullBoardModule } from '@bull-board/nestjs';
-import { ExpressAdapter } from '@bull-board/express';
+import { FastifyAdapter } from '@bull-board/fastify';
 
 export function setupBullBoard() {
   return BullBoardModule.forRoot({
     route: '/admin/queues',
-    adapter: ExpressAdapter,
+    adapter: FastifyAdapter,
   });
 }

@@ -1,7 +1,6 @@
 import {
   CurrentSession,
   CurrentUser,
-  Public,
   type SessionRecord,
   SessionService,
   SignInService,
@@ -14,7 +13,6 @@ import {
   NotFoundException,
   Param,
   Post,
-  UnauthorizedException,
 } from '@nestjs/common';
 
 @Controller('auth')
@@ -45,15 +43,6 @@ export class SessionsController {
   async revoke(@CurrentUser() userId: string, @Param('id') id: string) {
     if (!(await this.sessionService.revoke(id, { userId }))) {
       throw new NotFoundException();
-    }
-  }
-
-  @Public()
-  @Post('sign-out')
-  @HttpCode(204)
-  async signOut() {
-    if (!(await this.signInService.signOut())) {
-      throw new UnauthorizedException();
     }
   }
 

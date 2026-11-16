@@ -1,13 +1,15 @@
 import {
   ConflictException,
-  INestApplication,
   NotFoundException,
   StandardSchemaValidationPipe,
 } from '@nestjs/common';
 import { APP_PIPE } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
+import {
+  FastifyAdapter,
+  type NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 import request from 'supertest';
-import type { App } from 'supertest/types';
 import { ATTRIBUTE_TYPE, ROLE } from '@app/contracts';
 import { CategoriesController } from '../src/categories/categories.controller';
 import { CategoriesService } from '../src/categories/categories.service';
@@ -66,7 +68,7 @@ const body = (over: Record<string, unknown> = {}) => ({
 });
 
 describe('CategoriesController (e2e)', () => {
-  let app: INestApplication<App>;
+  let app: NestFastifyApplication;
 
   beforeAll(async () => {
     const fixture: TestingModule = await Test.createTestingModule({
@@ -77,18 +79,18 @@ describe('CategoriesController (e2e)', () => {
       ],
     }).compile();
 
-    app = fixture.createNestApplication();
-    app.use(
-      (
-        req: { user: unknown },
-        _res: unknown,
-        next: (error?: unknown) => void,
-      ) => {
-        req.user = currentUser;
-        next();
-      },
+    app = fixture.createNestApplication<NestFastifyApplication>(
+      new FastifyAdapter(),
     );
+    app
+      .getHttpAdapter()
+      .getInstance()
+      .addHook('onRequest', (request, _reply, done) => {
+        Object.assign(request, { user: currentUser });
+        done();
+      });
     await app.init();
+    await app.getHttpAdapter().getInstance().ready();
   });
 
   afterAll(async () => {

@@ -1,4 +1,4 @@
-import { INestApplication, StandardSchemaValidationPipe } from '@nestjs/common';
+import { StandardSchemaValidationPipe } from '@nestjs/common';
 import { APP_PIPE } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
@@ -10,7 +10,10 @@ import {
   TokenService,
 } from '@nestjs/authentication';
 import request from 'supertest';
-import type { App } from 'supertest/types';
+import {
+  FastifyAdapter,
+  type NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 import { AuthController } from '../src/auth/controllers/auth.controller';
 import { CredentialsService } from '../src/auth/credentials.service';
 import { EmailVerificationController } from '../src/auth/controllers/email-verification.controller';
@@ -49,7 +52,7 @@ function issues(body: unknown): string[] {
 }
 
 describe('Request validation (e2e)', () => {
-  let app: INestApplication<App>;
+  let app: NestFastifyApplication;
 
   beforeAll(async () => {
     const fixture: TestingModule = await Test.createTestingModule({
@@ -74,8 +77,11 @@ describe('Request validation (e2e)', () => {
       ],
     }).compile();
 
-    app = fixture.createNestApplication();
+    app = fixture.createNestApplication<NestFastifyApplication>(
+      new FastifyAdapter(),
+    );
     await app.init();
+    await app.getHttpAdapter().getInstance().ready();
   });
 
   afterAll(async () => {
