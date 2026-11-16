@@ -23,9 +23,19 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { QueueModule } from './queue/queue.module';
 import { LotsModule } from './lots/lots.module';
 import { CategoriesModule } from './categories/categories.module';
+import { ConfigModule } from '@nestjs/config';
+import config from './config/config';
+import { validateEnv } from './config/env.schema';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      cache: true,
+      expandVariables: true,
+      load: [config],
+      validate: validateEnv,
+    }),
     EventEmitterModule.forRoot({
       wildcard: false,
       delimiter: '.',
