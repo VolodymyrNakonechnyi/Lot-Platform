@@ -3,14 +3,20 @@ import { existsSync } from 'node:fs';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
-import type { NestExpressApplication } from '@nestjs/platform-express';
+import {
+  FastifyAdapter,
+  type NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 import { ConfigService } from '@nestjs/config';
 import type { AppConfig } from './config/types';
 
 async function bootstrap() {
   if (existsSync('.env')) process.loadEnvFile('.env');
 
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const app = await NestFactory.create<NestFastifyApplication>(
+    AppModule,
+    new FastifyAdapter({ trustProxy: 'loopback' }),
+  );
 
   const openApiDoc = SwaggerModule.createDocument(
     app,
@@ -28,9 +34,8 @@ async function bootstrap() {
 
   app.enableShutdownHooks();
   app.enableCors({ origin: webOrigin, credentials: true });
-  app.set('trust proxy', 'loopback');
   app.enableCsrfProtection({ trustedOrigins: [webOrigin] });
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 
   console.log(`API:     http://localhost:${port}`);
   console.log(`Swagger: http://localhost:${port}/docs`);
