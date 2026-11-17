@@ -2,6 +2,7 @@ import type { JobsOptions } from 'bullmq';
 
 export const QUEUE_NAMES = {
   AUTH: 'auth',
+  LOTS: 'lots',
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
