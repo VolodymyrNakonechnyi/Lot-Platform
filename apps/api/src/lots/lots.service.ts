@@ -1,18 +1,25 @@
 import {
   BadRequestException,
+  ConflictException,
+  ForbiddenException,
   Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { eq, inArray } from 'drizzle-orm';
+import { count, eq, inArray } from 'drizzle-orm';
 import {
   ATTRIBUTE_TYPE,
+  ROLE,
   type AttributeType,
   type CreateLotDto,
   type LotDetailsRow,
+  type PublicUser,
+  type UpdateLotDto,
 } from '@app/contracts';
 import { DRIZZLE } from 'src/db/db.module';
+import { isForeignKeyViolation } from 'src/db/errors';
 import {
+  bids,
   categories,
   categoryAttributes,
   deliveryMethods,
@@ -127,6 +134,98 @@ export class LotsService {
     }
 
     return created;
+  }
+
+  async updateLot(
+    id: string,
+    user: PublicUser,
+    dto: UpdateLotDto,
+  ): Promise<LotDetailsRow> {
+    await this.assertSellerOrAdmin(id, user);
+
+    const attributes = await this.resolveAttributes(dto);
+    const methods = await this.resolveDeliveryMethods(dto);
+
+    await this.db.transaction(async (tx) => {
+      await tx
+        .update(lots)
+        .set({
+          name: dto.name,
+          categoryId: dto.categoryId,
+          status: dto.status,
+          startPrice: dto.startPrice,
+          minBidStep: dto.minBidStep,
+          description: dto.description,
+          returnPolicy: dto.returnPolicy,
+          startDate: new Date(dto.startDate),
+          endDate: new Date(dto.endDate),
+        })
+        .where(eq(lots.id, id));
+
+      await tx.delete(lostAttributes).where(eq(lostAttributes.lotId, id));
+      await tx
+        .delete(lotDeliveryOptions)
+        .where(eq(lotDeliveryOptions.lotId, id));
+      await tx.delete(lotImages).where(eq(lotImages.lotId, id));
+
+      await this.insertRelated(tx, id, dto, attributes, methods);
+    });
+
+    const updated = await this.getLot(id);
+
+    if (!updated) {
+      throw new NotFoundException('Lot not found');
+    }
+
+    return updated;
+  }
+
+  async deleteLot(id: string, user: PublicUser): Promise<void> {
+    await this.assertSellerOrAdmin(id, user);
+
+    const [{ count: placedBids }] = await this.db
+      .select({ count: count() })
+      .from(bids)
+      .where(eq(bids.lotId, id));
+
+    if (placedBids > 0) {
+      throw new ConflictException('A lot with bids cannot be deleted');
+    }
+
+    try {
+      await this.db.transaction(async (tx) => {
+        await tx.delete(lostAttributes).where(eq(lostAttributes.lotId, id));
+        await tx
+          .delete(lotDeliveryOptions)
+          .where(eq(lotDeliveryOptions.lotId, id));
+        await tx.delete(lotImages).where(eq(lotImages.lotId, id));
+        await tx.delete(lots).where(eq(lots.id, id));
+      });
+    } catch (error) {
+      if (isForeignKeyViolation(error)) {
+        throw new ConflictException('A lot with payments cannot be deleted');
+      }
+
+      throw error;
+    }
+  }
+
+  private async assertSellerOrAdmin(
+    id: string,
+    user: PublicUser,
+  ): Promise<void> {
+    const lot = await this.db.query.lots.findFirst({
+      columns: { sellerId: true },
+      where: eq(lots.id, id),
+    });
+
+    if (!lot) {
+      throw new NotFoundException('Lot not found');
+    }
+
+    if (user.role !== ROLE.ADMIN && lot.sellerId !== user.id) {
+      throw new ForbiddenException('Only the seller can change this lot');
+    }
   }
 
   private async insertRelated(

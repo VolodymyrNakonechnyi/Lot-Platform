@@ -140,7 +140,7 @@ export const lotImageInputSchema = z.strictObject({
 
 export type LotImageInputDto = z.infer<typeof lotImageInputSchema>;
 
-export const createLotSchema = z
+export const lotInputSchema = z
   .strictObject({
     name: z.string().trim().min(3, 'name_too_short').max(200),
     categoryId,
@@ -160,4 +160,10 @@ export const createLotSchema = z
     path: ['endDate'],
   });
 
+export const createLotSchema = lotInputSchema;
+
 export type CreateLotDto = z.infer<typeof createLotSchema>;
+
+export const updateLotSchema = lotInputSchema;
+
+export type UpdateLotDto = z.infer<typeof updateLotSchema>;
