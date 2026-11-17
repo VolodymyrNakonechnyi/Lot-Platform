@@ -21,7 +21,7 @@ async function bootstrap() {
       fieldNameSize: 1024,
       fieldSize: 1 * 1024 * 1024,
       fields: 10,
-      fileSize: 12 * 1024 * 1024,
+      fileSize: 10 * 1024 * 1024,
       files: 8,
       headerPairs: 2000,
     },
