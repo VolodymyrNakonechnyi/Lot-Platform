@@ -22,8 +22,11 @@ import {
 } from '@app/contracts';
 import { Authenticate, CurrentUser, Public } from '@nestjs/authentication';
 import { ZodSerializerDto } from 'nestjs-zod';
+import { SkipThrottle } from '@nestjs/throttler';
 import { LotsService } from './lots.service';
 import { LotDetailsDto } from './dto/lot.dto';
+
+@SkipThrottle()
 @Controller('lots')
 export class LotsController {
   constructor(private readonly lotsService: LotsService) {}

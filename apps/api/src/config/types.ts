@@ -2,6 +2,7 @@ import type { NodeEnv } from '../common/env';
 
 export interface DatabaseConfig {
   url: string;
+  poolMax: number;
 }
 
 export interface RedisConfig {

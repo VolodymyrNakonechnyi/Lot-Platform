@@ -356,9 +356,19 @@ export const lots = pgTable(
   (table) => [
     check('role_valid', inList(table.status, LOT_STATUSES)),
     check('end_date_valid', sql`${table.startDate} < ${table.endDate}`),
-    index('lots_published_category_idx')
-      .on(table.categoryId)
+    index('lots_published_category_end_idx')
+      .on(table.categoryId, table.endDate, table.id)
       .where(sql`${table.status} = 'published'`),
+    index('lots_published_category_start_idx')
+      .on(table.categoryId, table.startDate.desc(), table.id.desc())
+      .where(sql`${table.status} = 'published'`),
+    index('lots_published_end_idx')
+      .on(table.endDate, table.id)
+      .where(sql`${table.status} = 'published'`),
+    index('lots_seller_idx').on(table.sellerId, table.id.desc()),
+    index('lots_buyer_idx')
+      .on(table.buyerId, table.id.desc())
+      .where(sql`${table.buyerId} IS NOT NULL`),
   ],
 );
 

@@ -25,6 +25,7 @@ function build(): AppConfig {
 
     database: {
       url: databaseUrl(env),
+      poolMax: env.DATABASE_POOL_MAX,
     },
 
     redis: {

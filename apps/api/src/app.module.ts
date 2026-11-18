@@ -1,5 +1,5 @@
 import { BullModule } from '@nestjs/bullmq';
-import { Module, StandardSchemaValidationPipe } from '@nestjs/common';
+import { Logger, Module, StandardSchemaValidationPipe } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DbModule } from './db/db.module';
@@ -19,6 +19,8 @@ import {
 import { join } from 'node:path';
 import { ThrottlerGuard, ThrottlerModule, minutes } from '@nestjs/throttler';
 import { accountEmailAndIp, skipWithoutAccount } from './auth/account-email';
+import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
+import Redis from 'ioredis';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { QueueModule } from './queue/queue.module';
 import { LotsModule } from './lots/lots.module';
@@ -27,6 +29,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import config from './config/config';
 import type { AppConfig } from './config/types';
 import { validateEnv } from './config/env.schema';
+import { CacheModule } from '@nestjs/cache-manager';
+import { createKeyv } from '@keyv/redis';
+import { Keyv } from 'keyv';
+import { KeyvCacheableMemory } from 'cacheable';
 
 @Module({
   imports: [
@@ -43,17 +49,45 @@ import { validateEnv } from './config/env.schema';
     }),
     DbModule,
     UserModule,
-    ThrottlerModule.forRoot({
-      throttlers: [
-        { name: 'default', limit: 300, ttl: minutes(1) },
-        {
-          name: 'account',
-          limit: 5,
-          ttl: minutes(15),
-          getTracker: accountEmailAndIp,
-          skipIf: skipWithoutAccount,
-        },
-      ],
+    CacheModule.registerAsync({
+      isGlobal: true,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<AppConfig, true>) => {
+        const { host, port } = config.get('redis', { infer: true });
+        const redisStore = createKeyv(`redis://${host}:${port}`);
+        const logger = new Logger('CacheModule');
+
+        redisStore.on('error', (error: unknown) =>
+          logger.error(`redis cache store: ${String(error)}`),
+        );
+
+        return {
+          stores: [
+            new Keyv({
+              store: new KeyvCacheableMemory({ ttl: 60_000, lruSize: 5000 }),
+            }),
+            redisStore,
+          ],
+        };
+      },
+    }),
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<AppConfig, true>) => ({
+        throttlers: [
+          { name: 'default', limit: 300, ttl: minutes(1) },
+          {
+            name: 'account',
+            limit: 5,
+            ttl: minutes(15),
+            getTracker: accountEmailAndIp,
+            skipIf: skipWithoutAccount,
+          },
+        ],
+        storage: new ThrottlerStorageRedisService(
+          new Redis(config.get('redis', { infer: true })),
+        ),
+      }),
     }),
     BullModule.forRootAsync({
       inject: [ConfigService],

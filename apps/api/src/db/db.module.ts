@@ -20,10 +20,14 @@ export const DRIZZLE = Symbol('DRIZZLE');
     {
       provide: PG_POOL,
       inject: [ConfigService],
-      useFactory: (config: ConfigService<AppConfig, true>) =>
-        new Pool({
-          connectionString: config.get('database.url', { infer: true }),
-        }),
+      useFactory: (config: ConfigService<AppConfig, true>) => {
+        const database = config.get('database', { infer: true });
+
+        return new Pool({
+          connectionString: database.url,
+          max: database.poolMax,
+        });
+      },
     },
     {
       provide: DRIZZLE,

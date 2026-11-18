@@ -8,8 +8,8 @@ export const envSchema = z.object({
   WEB_ORIGIN: z.url(),
 
   DATABASE_URL: z.url(),
+  DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(100).default(10),
   TEST_DATABASE_URL: z.url().optional(),
-
   REDIS_HOST: z.string().min(1).default('localhost'),
   REDIS_PORT: z.coerce.number().int().min(1).max(65535).default(6379),
 
