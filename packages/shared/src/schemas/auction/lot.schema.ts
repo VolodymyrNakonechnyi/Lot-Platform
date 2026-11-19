@@ -20,7 +20,6 @@ export type LotIdParamDto = z.infer<typeof lotIdParamSchema>;
 export const CREATABLE_LOT_STATUSES = [
   LOT_STATUS.DRAFT,
   LOT_STATUS.PENDING,
-  LOT_STATUS.PUBLISHED,
 ] as const;
 
 export const CANCELLABLE_LOT_STATUSES = [
@@ -149,30 +148,43 @@ export const lotImageInputSchema = z.strictObject({
 
 export type LotImageInputDto = z.infer<typeof lotImageInputSchema>;
 
-export const lotInputSchema = z
-  .strictObject({
-    name: z.string().trim().min(3, 'name_too_short').max(200),
-    categoryId,
-    startPrice: money,
-    minBidStep: money.default('1.00'),
-    description: z.string().trim().max(5000).nullable().default(null),
-    returnPolicy: z.string().trim().max(2000).nullable().default(null),
-    startDate: isoDateTime,
-    endDate: isoDateTime,
-    status: z.enum(CREATABLE_LOT_STATUSES).default(LOT_STATUS.DRAFT),
-    attributes: z.array(lotAttributeInputSchema).max(100).default([]),
-    deliveryOptions: z.array(lotDeliveryOptionInputSchema).max(20).default([]),
-    images: z.array(lotImageInputSchema).max(8).default([]),
-  })
-  .refine(({ startDate, endDate }) => startDate < endDate, {
-    message: 'end_date_before_start_date',
-    path: ['endDate'],
-  });
+const endsAfterStart = {
+  message: 'end_date_before_start_date',
+  path: ['endDate'] as PropertyKey[],
+};
 
-export const createLotSchema = lotInputSchema;
+export const lotInputSchema = z.strictObject({
+  name: z.string().trim().min(3, 'name_too_short').max(200),
+  categoryId,
+  startPrice: money,
+  minBidStep: money.default('1.00'),
+  description: z.string().trim().max(5000).nullable().default(null),
+  returnPolicy: z.string().trim().max(2000).nullable().default(null),
+  startDate: isoDateTime,
+  endDate: isoDateTime,
+  attributes: z.array(lotAttributeInputSchema).max(100).default([]),
+  deliveryOptions: z.array(lotDeliveryOptionInputSchema).max(20).default([]),
+  images: z.array(lotImageInputSchema).max(8).default([]),
+});
+
+export type LotInputDto = z.infer<typeof lotInputSchema>;
+export const createLotSchema = lotInputSchema
+  .extend({
+    status: z.enum(CREATABLE_LOT_STATUSES).default(LOT_STATUS.DRAFT),
+  })
+  .refine(({ startDate, endDate }) => startDate < endDate, endsAfterStart);
 
 export type CreateLotDto = z.infer<typeof createLotSchema>;
 
-export const updateLotSchema = lotInputSchema;
+export const updateLotSchema = lotInputSchema.refine(
+  ({ startDate, endDate }) => startDate < endDate,
+  endsAfterStart,
+);
 
 export type UpdateLotDto = z.infer<typeof updateLotSchema>;
+
+export const placeBidSchema = z.strictObject({
+  amount: money,
+});
+
+export type PlaceBidDto = z.infer<typeof placeBidSchema>;

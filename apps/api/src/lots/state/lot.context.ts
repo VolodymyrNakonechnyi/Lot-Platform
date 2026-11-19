@@ -1,5 +1,9 @@
 import { LOT_STATUS, type LotId, type LotStatus } from '@app/contracts';
-import type { LotState, LotStatusStore } from './lot-state.interface';
+import type {
+  BidOutcome,
+  LotState,
+  LotStatusStore,
+} from './lot-state.interface';
 import { DraftState } from './draft.state';
 import { PendingState } from './pending.state';
 import { RejectedState } from './rejected.state';
@@ -67,6 +71,10 @@ export class LotContext implements LotState {
 
   block(): Promise<void> {
     return this.state.block();
+  }
+
+  placeBid(userId: string, amount: string): Promise<BidOutcome> {
+    return this.state.placeBid(userId, amount);
   }
 
   unblock(): Promise<void> {

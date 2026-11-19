@@ -1,6 +1,6 @@
 import { ConflictException } from '@nestjs/common';
 import { LOT_STATUS } from '@app/contracts';
-import type { LotState } from './lot-state.interface';
+import type { BidOutcome, LotState } from './lot-state.interface';
 
 export class ExpiredState implements LotState {
   readonly status = LOT_STATUS.EXPIRED;
@@ -39,5 +39,9 @@ export class ExpiredState implements LotState {
 
   unblock(): Promise<void> {
     throw new ConflictException('Cannot unblock an expired lot');
+  }
+
+  placeBid(): Promise<BidOutcome> {
+    throw new ConflictException('Cannot bid on an expired lot');
   }
 }

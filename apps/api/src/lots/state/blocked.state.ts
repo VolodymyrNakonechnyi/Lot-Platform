@@ -1,6 +1,6 @@
 import { ConflictException } from '@nestjs/common';
 import { LOT_STATUS } from '@app/contracts';
-import type { LotState } from './lot-state.interface';
+import type { BidOutcome, LotState } from './lot-state.interface';
 import type { LotContext } from './lot.context';
 import { DraftState } from './draft.state';
 
@@ -44,5 +44,9 @@ export class BlockedState implements LotState {
 
   block(): Promise<void> {
     throw new ConflictException('Cannot block a blocked lot');
+  }
+
+  placeBid(): Promise<BidOutcome> {
+    throw new ConflictException('Cannot bid on a blocked lot');
   }
 }

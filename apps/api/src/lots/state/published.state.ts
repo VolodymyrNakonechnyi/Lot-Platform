@@ -1,6 +1,6 @@
 import { ConflictException } from '@nestjs/common';
 import { LOT_STATUS } from '@app/contracts';
-import type { LotState } from './lot-state.interface';
+import type { BidOutcome, LotState } from './lot-state.interface';
 import type { LotContext } from './lot.context';
 import { ReservedState } from './reserved.state';
 import { ExpiredState } from './expired.state';
@@ -11,6 +11,27 @@ export class PublishedState implements LotState {
   readonly status = LOT_STATUS.PUBLISHED;
 
   constructor(private readonly context: LotContext) {}
+
+  async placeBid(userId: string, amount: string): Promise<BidOutcome> {
+    const outcome = await this.context.store.addBid(
+      this.context.lotId,
+      userId,
+      amount,
+    );
+    const leader = outcome.previousLeader;
+
+    if (leader && leader.userId !== userId) {
+      this.context.store.notifyOutbid({
+        lotId: this.context.lotId,
+        lotName: outcome.lotName,
+        email: leader.email,
+        previousAmount: leader.amount,
+        currentAmount: outcome.amount,
+      });
+    }
+
+    return outcome;
+  }
 
   async reserve(): Promise<void> {
     await this.context.persist(this.status, LOT_STATUS.RESERVED);

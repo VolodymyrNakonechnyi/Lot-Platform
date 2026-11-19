@@ -6,14 +6,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { and, count, eq, inArray } from 'drizzle-orm';
+import { and, count, desc, eq, inArray } from 'drizzle-orm';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   ATTRIBUTE_TYPE,
-  CANCELLABLE_LOT_STATUSES,
   LOT_STATUS,
   ROLE,
   type AttributeType,
   type CreateLotDto,
+  type LotInputDto,
   type LotDetailsRow,
   type LotId,
   type LotStatus,
@@ -31,13 +32,20 @@ import {
   lotImages,
   lots,
   lostAttributes,
+  users,
   type CategoryAttribute,
 } from 'src/db/schema';
 import { type Database, type Transaction } from 'src/db/types';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { CACHE_KEYS, CACHE_TTL } from 'src/common/cache';
 import { prepareLotById, type PreparedLotQuery } from './lots.queries';
-import { type LotStatusStore } from './state';
+import {
+  LotContext,
+  type BidOutcome,
+  type LotStatusStore,
+  type OutbidNotification,
+} from './state';
+import { LotOutbidEvent } from './queue/lot.events';
 
 @Injectable()
 export class LotsService implements LotStatusStore {
@@ -46,6 +54,7 @@ export class LotsService implements LotStatusStore {
   constructor(
     @Inject(DRIZZLE) private readonly db: Database,
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
+    private readonly events: EventEmitter2,
   ) {
     this.lotById = prepareLotById(db);
   }
@@ -77,7 +86,7 @@ export class LotsService implements LotStatusStore {
           name: dto.name,
           categoryId: dto.categoryId,
           sellerId,
-          status: dto.status,
+          status: LOT_STATUS.DRAFT,
           startPrice: dto.startPrice,
           minBidStep: dto.minBidStep,
           description: dto.description,
@@ -91,6 +100,11 @@ export class LotsService implements LotStatusStore {
 
       return lot.id;
     });
+
+    if (dto.status !== LOT_STATUS.DRAFT) {
+      const lot = await LotContext.load(id, this);
+      await lot.submit();
+    }
 
     return await this.getLotById(id);
   }
@@ -111,7 +125,6 @@ export class LotsService implements LotStatusStore {
         .set({
           name: dto.name,
           categoryId: dto.categoryId,
-          status: dto.status,
           startPrice: dto.startPrice,
           minBidStep: dto.minBidStep,
           description: dto.description,
@@ -170,21 +183,56 @@ export class LotsService implements LotStatusStore {
   async cancelLot(id: string, user: PublicUser): Promise<LotDetailsRow> {
     await this.assertSellerOrAdmin(id, user);
 
-    const [cancelled] = await this.db
-      .update(lots)
-      .set({ status: LOT_STATUS.CANCELLED })
-      .where(
-        and(eq(lots.id, id), inArray(lots.status, CANCELLABLE_LOT_STATUSES)),
-      )
-      .returning({ id: lots.id });
+    const lot = await LotContext.load(id, this);
+    await lot.cancel();
 
-    if (!cancelled) {
-      throw new ConflictException(
-        'Lot cannot be cancelled in its current status',
-      );
-    }
+    return await this.getLotById(id);
+  }
 
-    await this.cache.del(CACHE_KEYS.lotDetails(id));
+  async submitLot(id: string, user: PublicUser): Promise<LotDetailsRow> {
+    await this.assertSellerOrAdmin(id, user);
+
+    const lot = await LotContext.load(id, this);
+    await lot.submit();
+
+    return await this.getLotById(id);
+  }
+
+  async approveLot(id: string): Promise<LotDetailsRow> {
+    const lot = await LotContext.load(id, this);
+    await lot.approve();
+
+    return await this.getLotById(id);
+  }
+
+  async rejectLot(id: string): Promise<LotDetailsRow> {
+    const lot = await LotContext.load(id, this);
+    await lot.reject();
+
+    return await this.getLotById(id);
+  }
+
+  async blockLot(id: string): Promise<LotDetailsRow> {
+    const lot = await LotContext.load(id, this);
+    await lot.block();
+
+    return await this.getLotById(id);
+  }
+
+  async unblockLot(id: string): Promise<LotDetailsRow> {
+    const lot = await LotContext.load(id, this);
+    await lot.unblock();
+
+    return await this.getLotById(id);
+  }
+
+  async placeBid(
+    id: string,
+    userId: string,
+    amount: string,
+  ): Promise<LotDetailsRow> {
+    const lot = await LotContext.load(id, this);
+    await lot.placeBid(userId, amount);
 
     return await this.getLotById(id);
   }
@@ -225,6 +273,71 @@ export class LotsService implements LotStatusStore {
     return placedBids > 0;
   }
 
+  async addBid(id: LotId, userId: string, amount: string): Promise<BidOutcome> {
+    const outcome = await this.db.transaction(async (tx) => {
+      const [lot] = await tx
+        .select({
+          name: lots.name,
+          sellerId: lots.sellerId,
+          startPrice: lots.startPrice,
+          minBidStep: lots.minBidStep,
+          endDate: lots.endDate,
+        })
+        .from(lots)
+        .where(eq(lots.id, id))
+        .for('update');
+
+      if (!lot) {
+        throw new NotFoundException('Lot not found');
+      }
+
+      if (lot.sellerId === userId) {
+        throw new ForbiddenException('A seller cannot bid on their own lot');
+      }
+
+      if (lot.endDate.getTime() <= Date.now()) {
+        throw new ConflictException('Bidding has ended for this lot');
+      }
+
+      const [leader] = await tx
+        .select({
+          userId: bids.userId,
+          amount: bids.amount,
+          email: users.email,
+        })
+        .from(bids)
+        .innerJoin(users, eq(users.id, bids.userId))
+        .where(eq(bids.lotId, id))
+        .orderBy(desc(bids.amount))
+        .limit(1);
+
+      const minimum = leader
+        ? Number(leader.amount) + Number(lot.minBidStep)
+        : Number(lot.startPrice);
+
+      if (Number(amount) < minimum) {
+        throw new ConflictException(
+          `Bid must be at least ${minimum.toFixed(2)}`,
+        );
+      }
+
+      await tx.insert(bids).values({ lotId: id, userId, amount });
+
+      return { lotName: lot.name, amount, previousLeader: leader ?? null };
+    });
+
+    await this.cache.del(CACHE_KEYS.lotDetails(id));
+
+    return outcome;
+  }
+
+  notifyOutbid(notification: OutbidNotification): void {
+    this.events.emit(
+      LotOutbidEvent.eventName,
+      new LotOutbidEvent(notification),
+    );
+  }
+
   private async assertSellerOrAdmin(
     id: string,
     user: PublicUser,
@@ -246,7 +359,7 @@ export class LotsService implements LotStatusStore {
   private async insertRelated(
     tx: Transaction,
     lotId: string,
-    dto: CreateLotDto,
+    dto: LotInputDto,
     attributes: Map<string, CategoryAttribute>,
     methods: Map<string, number>,
   ): Promise<void> {
@@ -283,7 +396,7 @@ export class LotsService implements LotStatusStore {
   }
 
   private async resolveAttributes(
-    dto: CreateLotDto,
+    dto: LotInputDto,
   ): Promise<Map<string, CategoryAttribute>> {
     const category = await this.db.query.categories.findFirst({
       columns: { id: true },
@@ -333,7 +446,7 @@ export class LotsService implements LotStatusStore {
   }
 
   private async resolveDeliveryMethods(
-    dto: CreateLotDto,
+    dto: LotInputDto,
   ): Promise<Map<string, number>> {
     const slugs = dto.deliveryOptions.map(({ method }) => method);
 

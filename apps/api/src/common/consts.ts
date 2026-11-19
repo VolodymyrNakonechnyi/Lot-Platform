@@ -14,6 +14,12 @@ export const AUTH_JOB_NAMES = {
 
 export type AuthJobName = (typeof AUTH_JOB_NAMES)[keyof typeof AUTH_JOB_NAMES];
 
+export const LOT_JOB_NAMES = {
+  NOTIFY_OUTBID: 'notify-outbid',
+} as const;
+
+export type LotJobName = (typeof LOT_JOB_NAMES)[keyof typeof LOT_JOB_NAMES];
+
 export const JOB_OPTIONS = {
   attempts: 3,
   backoff: { type: 'exponential', delay: 5_000 },
