@@ -9,6 +9,8 @@ import { categoryId } from '../catalog/category.schema.js';
 
 export const lotId = z.uuid();
 
+export type LotId = z.infer<typeof lotId>;
+
 export const lotIdParamSchema = z.strictObject({
   id: lotId,
 });
@@ -19,6 +21,13 @@ export const CREATABLE_LOT_STATUSES = [
   LOT_STATUS.DRAFT,
   LOT_STATUS.PENDING,
   LOT_STATUS.PUBLISHED,
+] as const;
+
+export const CANCELLABLE_LOT_STATUSES = [
+  LOT_STATUS.DRAFT,
+  LOT_STATUS.PENDING,
+  LOT_STATUS.PUBLISHED,
+  LOT_STATUS.REJECTED,
 ] as const;
 
 export const isoDateTime = z.preprocess(

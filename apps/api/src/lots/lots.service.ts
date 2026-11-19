@@ -6,13 +6,17 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { count, eq, inArray } from 'drizzle-orm';
+import { and, count, eq, inArray } from 'drizzle-orm';
 import {
   ATTRIBUTE_TYPE,
+  CANCELLABLE_LOT_STATUSES,
+  LOT_STATUS,
   ROLE,
   type AttributeType,
   type CreateLotDto,
   type LotDetailsRow,
+  type LotId,
+  type LotStatus,
   type PublicUser,
   type UpdateLotDto,
 } from '@app/contracts';
@@ -33,9 +37,10 @@ import { type Database, type Transaction } from 'src/db/types';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { CACHE_KEYS, CACHE_TTL } from 'src/common/cache';
 import { prepareLotById, type PreparedLotQuery } from './lots.queries';
+import { type LotStatusStore } from './state';
 
 @Injectable()
-export class LotsService {
+export class LotsService implements LotStatusStore {
   private readonly lotById: PreparedLotQuery;
 
   constructor(
@@ -45,18 +50,20 @@ export class LotsService {
     this.lotById = prepareLotById(db);
   }
 
-  async getLot(id: string): Promise<LotDetailsRow | undefined> {
+  async getLotById(id: string): Promise<LotDetailsRow> {
     const key = CACHE_KEYS.lotDetails(id);
-    const cached = await this.cache.get<LotDetailsRow | null>(key);
+    let lot = await this.cache.get<LotDetailsRow | null>(key);
 
-    if (cached !== undefined) {
-      return cached ?? undefined;
+    if (lot === undefined) {
+      lot = (await this.lotById.execute({ id })) ?? null;
+      await this.cache.set(key, lot, CACHE_TTL.LOT_DETAILS);
     }
 
-    const lot = (await this.lotById.execute({ id })) ?? null;
-    await this.cache.set(key, lot, CACHE_TTL.LOT_DETAILS);
+    if (!lot) {
+      throw new NotFoundException('Lot not found');
+    }
 
-    return lot ?? undefined;
+    return lot;
   }
 
   async createLot(sellerId: string, dto: CreateLotDto): Promise<LotDetailsRow> {
@@ -85,13 +92,7 @@ export class LotsService {
       return lot.id;
     });
 
-    const created = await this.getLot(id);
-
-    if (!created) {
-      throw new NotFoundException('Lot not found');
-    }
-
-    return created;
+    return await this.getLotById(id);
   }
 
   async updateLot(
@@ -131,13 +132,7 @@ export class LotsService {
 
     await this.cache.del(CACHE_KEYS.lotDetails(id));
 
-    const updated = await this.getLot(id);
-
-    if (!updated) {
-      throw new NotFoundException('Lot not found');
-    }
-
-    return updated;
+    return await this.getLotById(id);
   }
 
   async deleteLot(id: string, user: PublicUser): Promise<void> {
@@ -170,6 +165,64 @@ export class LotsService {
     }
 
     await this.cache.del(CACHE_KEYS.lotDetails(id));
+  }
+
+  async cancelLot(id: string, user: PublicUser): Promise<LotDetailsRow> {
+    await this.assertSellerOrAdmin(id, user);
+
+    const [cancelled] = await this.db
+      .update(lots)
+      .set({ status: LOT_STATUS.CANCELLED })
+      .where(
+        and(eq(lots.id, id), inArray(lots.status, CANCELLABLE_LOT_STATUSES)),
+      )
+      .returning({ id: lots.id });
+
+    if (!cancelled) {
+      throw new ConflictException(
+        'Lot cannot be cancelled in its current status',
+      );
+    }
+
+    await this.cache.del(CACHE_KEYS.lotDetails(id));
+
+    return await this.getLotById(id);
+  }
+
+  async currentStatus(id: LotId): Promise<LotStatus> {
+    const lot = await this.db.query.lots.findFirst({
+      columns: { status: true },
+      where: eq(lots.id, id),
+    });
+
+    if (!lot) {
+      throw new NotFoundException('Lot not found');
+    }
+
+    return lot.status;
+  }
+
+  async changeStatus(id: LotId, from: LotStatus, to: LotStatus): Promise<void> {
+    const [changed] = await this.db
+      .update(lots)
+      .set({ status: to })
+      .where(and(eq(lots.id, id), eq(lots.status, from)))
+      .returning({ id: lots.id });
+
+    if (!changed) {
+      throw new ConflictException(`Lot is no longer ${from}`);
+    }
+
+    await this.cache.del(CACHE_KEYS.lotDetails(id));
+  }
+
+  async hasBids(id: LotId): Promise<boolean> {
+    const [{ count: placedBids }] = await this.db
+      .select({ count: count() })
+      .from(bids)
+      .where(eq(bids.lotId, id));
+
+    return placedBids > 0;
   }
 
   private async assertSellerOrAdmin(

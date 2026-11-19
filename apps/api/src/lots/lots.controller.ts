@@ -5,7 +5,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  NotFoundException,
   Param,
   Post,
   Put,
@@ -37,13 +36,7 @@ export class LotsController {
   async getLot(
     @Param({ schema: lotIdParamSchema }) { id }: LotIdParamDto,
   ): Promise<LotDetailsRow> {
-    const lot = await this.lotsService.getLot(id);
-
-    if (!lot) {
-      throw new NotFoundException('Lot not found');
-    }
-
-    return lot;
+    return await this.lotsService.getLotById(id);
   }
 
   @Post()
